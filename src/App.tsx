@@ -13,10 +13,11 @@ const [incidents, setIncidents] = useState<Incident[]>([]);
 const [loading, setLoading] = useState(true);
 const [selectedIncident, setSelectedIncident] = useState<Incident | null>(null);
 const [lastUpdated, setLastUpdated] = useState(new Date());
-const [alertTweet, setAlertTweet] = useState<string | null>(null);
+const [alertIncident, setAlertIncident] = useState<Incident | null>(null);
 
 const monitoredSources: MonitoredSource[] = [
-{ id: '1', url: 'https://x.com/ALERTX360', handle: '@ALERTX360', label: 'AlertX360' }
+{ id: '1', url: 'https://x.com/ALERTX360', handle: '@ALERTX360', label: 'AlertX360' },
+{ id: '2', url: 'https://x.com/MonitorX99800', handle: '@MonitorX99800', label: 'MonitorX' }
 ];
 
 const loadData = async (isInitial = false) => {
@@ -25,11 +26,35 @@ if (isInitial) setLoading(true);
 
 const data = await fetchLatestIncidents(monitoredSources);
 
+/* Detect NEW incident */
+if (!isInitial && data.length > 0 && incidents.length > 0) {
+
+const latestExisting = new Date(incidents[0].timestamp).getTime();
+
+const newIncidents = data.filter(
+item => new Date(item.timestamp).getTime() > latestExisting
+);
+
+if (newIncidents.length > 0) {
+
+setAlertIncident(newIncidents[0]);
+
+setTimeout(() => {
+setAlertIncident(null);
+}, 7000);
+
+}
+
+}
+
 setIncidents(data);
 
 if (selectedIncident) {
+
 const updated = data.find(i => i.id === selectedIncident.id);
+
 if (updated) setSelectedIncident(updated);
+
 }
 
 setLoading(false);
@@ -37,64 +62,14 @@ setLastUpdated(new Date());
 
 };
 
+/* Faster refresh */
 useEffect(() => {
 
 loadData(true);
 
-const interval = setInterval(() => loadData(false), 2 * 60 * 1000);
+const interval = setInterval(() => loadData(false), 30000);
 
 return () => clearInterval(interval);
-
-}, []);
-
-
-// Twitter alert detector
-useEffect(() => {
-
-const checkTweets = () => {
-
-const tweets = document.querySelectorAll('[data-testid="tweet"]');
-
-if (tweets.length > 0) {
-
-const latestTweet = tweets[0].innerText;
-
-if (latestTweet && latestTweet !== alertTweet) {
-
-setAlertTweet(latestTweet);
-
-setTimeout(() => {
-setAlertTweet(null);
-}, 6000);
-
-}
-
-}
-
-};
-
-const interval = setInterval(checkTweets, 5000);
-
-return () => clearInterval(interval);
-
-}, [alertTweet]);
-
-
-// Load X widget
-useEffect(() => {
-
-if (!(window as any).twttr) {
-
-const script = document.createElement('script');
-script.src = "https://platform.twitter.com/widgets.js";
-script.async = true;
-document.body.appendChild(script);
-
-} else {
-
-(window as any).twttr.widgets.load();
-
-}
 
 }, []);
 
@@ -102,18 +77,18 @@ return (
 
 <div className="flex flex-col h-screen bg-[#050505] text-white font-sans">
 
+{/* Alert Popup */}
+
 <AnimatePresence>
 
-{alertTweet && (
+{alertIncident && (
 
 <motion.div
-initial={{ y: -100, opacity: 0 }}
+initial={{ y: -120, opacity: 0 }}
 animate={{ y: 20, opacity: 1 }}
-exit={{ y: -100, opacity: 0 }}
-className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-red-600 px-6 py-4 rounded-xl flex items-center gap-3 shadow-2xl max-w-xl"
+exit={{ y: -120, opacity: 0 }}
+className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-red-600 px-6 py-4 rounded-xl flex items-center gap-4 shadow-2xl max-w-xl"
 >
-
-<Twitter size={18} />
 
 <div className="flex flex-col">
 
@@ -121,8 +96,12 @@ className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-red-600 px-6 py-4 round
 SIGNAL DETECTED
 </span>
 
-<span className="text-sm text-white/90 line-clamp-2">
-{alertTweet}
+<span className="text-sm font-semibold">
+{alertIncident.title}
+</span>
+
+<span className="text-[11px] text-white/80">
+Location: {alertIncident.location.name}
 </span>
 
 </div>
@@ -132,6 +111,9 @@ SIGNAL DETECTED
 )}
 
 </AnimatePresence>
+
+
+{/* HEADER */}
 
 <header className="h-14 border-b border-white/10 flex items-center justify-between px-6 bg-[#0a0a0a]">
 
@@ -170,7 +152,7 @@ INTEL GRID ACTIVE
 </div>
 
 <span className="text-[9px] text-white/40 uppercase">
-Nodes: {monitoredSources.length} | Sync: 2m
+Nodes: {monitoredSources.length} | Sync: 30s
 </span>
 
 </div>
@@ -192,6 +174,9 @@ Sync
 </div>
 
 </header>
+
+
+{/* MAIN */}
 
 <main className="flex flex-1 overflow-hidden">
 
@@ -220,6 +205,8 @@ selectedIncidentId={selectedIncident?.id}
 />
 
 </div>
+
+{/* X SIGNAL FEED (UNCHANGED) */}
 
 <div className="w-[360px] hidden lg:block">
 
@@ -304,6 +291,7 @@ View Source
 </section>
 
 </main>
+
 
 <footer className="h-8 bg-[#111] border-t border-white/10 flex items-center px-4 text-[10px] text-white/40">
 
