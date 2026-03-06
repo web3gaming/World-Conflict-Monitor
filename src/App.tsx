@@ -67,23 +67,29 @@ return () => clearInterval(interval);
 }, []);
 
 
-// FIX: Force Twitter widgets to render in React
+// Force X widget rendering
 useEffect(() => {
 
-const timer = setTimeout(() => {
+const loadTwitter = () => {
 
-if ((window as any).twttr && (window as any).twttr.widgets) {
+if (!(window as any).twttr) {
+
+const script = document.createElement('script');
+script.src = "https://platform.twitter.com/widgets.js";
+script.async = true;
+document.body.appendChild(script);
+
+} else {
 
 (window as any).twttr.widgets.load();
 
 }
 
-}, 1500);
+};
 
-return () => clearTimeout(timer);
+setTimeout(loadTwitter, 1500);
 
 }, []);
-
 
 return (
 
@@ -198,8 +204,8 @@ className="twitter-timeline"
 data-theme="dark"
 data-height="700"
 data-chrome="nofooter noborders transparent"
-href="https://x.com/i/lists/2029775844437299515">
-Conflict Monitor Feed
+href="https://x.com/ALERTX360">
+Posts from ALERTX360
 </a>
 
 </div>
