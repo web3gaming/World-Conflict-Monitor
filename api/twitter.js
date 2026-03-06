@@ -1,20 +1,22 @@
 export default async function handler(req, res) {
 
   const sources = [
-    "https://rsshub.app/twitter/user/MonitorX99800",
-    "https://rsshub.app/twitter/user/ALERTX360"
+    "https://nitter.net/MonitorX99800/rss",
+    "https://nitter.net/ALERTX360/rss"
   ];
 
   try {
 
     const results = await Promise.all(
       sources.map(async (url) => {
+
         const r = await fetch(url);
         const text = await r.text();
 
         const items = [...text.matchAll(/<item>([\s\S]*?)<\/item>/g)].slice(0,3);
 
         return items.map(i => {
+
           const block = i[1];
 
           const title = block.match(/<title>(.*?)<\/title>/)?.[1] || "";
@@ -26,22 +28,25 @@ export default async function handler(req, res) {
             link,
             date: pubDate
           };
+
         });
 
       })
     );
 
-    const tweets = results.flat().sort((a,b)=> new Date(b.date) - new Date(a.date));
+    const tweets = results.flat().sort(
+      (a,b) => new Date(b.date) - new Date(a.date)
+    );
 
     res.status(200).json({
-      status:"ok",
+      status: "ok",
       tweets: tweets.slice(0,10)
     });
 
   } catch (err) {
 
     res.status(500).json({
-      status:"error",
+      status: "error",
       message: err.message
     });
 
