@@ -23,20 +23,20 @@ fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json')
 
 useEffect(() => {
 
-if (!worldData || !svgRef.current || !containerRef.current) return;
+if (!worldData || !svgRef.current) return;
 
-const width = containerRef.current.offsetWidth;
-const height = containerRef.current.offsetHeight;
+const width = 1200;
+const height = 600;
 
 const svg = d3.select(svgRef.current)
-.attr("width", width)
-.attr("height", height);
+.attr("viewBox", "0 0 ${width} ${height}")
+.attr("preserveAspectRatio","xMidYMid meet");
 
 svg.selectAll("*").remove();
 
 const projection = d3.geoMercator()
 .scale(width / 6)
-.translate([width / 2, height / 1.55]);
+.translate([width / 2, height / 1.6]);
 
 const path = d3.geoPath().projection(projection);
 
@@ -49,29 +49,28 @@ g.selectAll("path")
 .enter()
 .append("path")
 .attr("d", path as any)
-.attr("fill", "#1a1a1a")
-.attr("stroke", "#333")
-.attr("stroke-width", 0.5);
+.attr("fill","#1a1a1a")
+.attr("stroke","#333")
+.attr("stroke-width",0.5);
 
 const points = g.selectAll(".incident")
 .data(incidents)
 .enter()
 .append("circle")
-.attr("class","incident")
-.attr("cx", d => projection([d.location.lng, d.location.lat])?.[0] || 0)
-.attr("cy", d => projection([d.location.lng, d.location.lat])?.[1] || 0)
+.attr("cx",d => projection([d.location.lng,d.location.lat])?.[0] || 0)
+.attr("cy",d => projection([d.location.lng,d.location.lat])?.[1] || 0)
 .attr("r", d => d.severity === "critical" ? 7 : 4)
-.attr("fill", d => {
+.attr("fill", d=>{
 if(d.severity==="critical") return "#ef4444";
 if(d.severity==="high") return "#f97316";
 return "#eab308";
 })
 .style("cursor","pointer")
-.on("click", (_,d)=> onSelectIncident(d));
+.on("click",(_,d)=> onSelectIncident(d));
 
 const zoom = d3.zoom()
 .scaleExtent([1,8])
-.on("zoom", (event)=>{
+.on("zoom",(event)=>{
 g.attr("transform",event.transform);
 });
 
@@ -106,24 +105,13 @@ return (
 <div
 ref={containerRef}
 className="relative w-full h-full bg-[#0a0a0a] overflow-hidden rounded-xl border border-white/5"
-><svg ref={svgRef} className="absolute inset-0 w-full h-full" />{/* Radar */}
+><svg ref={svgRef} className="absolute inset-0 w-full h-full"/>{/* Radar */}
 
 <div className="radar"></div>{/* Controls */}
 
-<div className="absolute bottom-6 right-6 flex flex-col gap-2 z-20"><button onClick={zoomIn}
-className="w-9 h-9 bg-black/70 border border-white/20 rounded flex items-center justify-center text-white">
-+
-</button>
-
-<button onClick={zoomOut}
-className="w-9 h-9 bg-black/70 border border-white/20 rounded flex items-center justify-center text-white">
-−
-</button>
-
-<button onClick={fullscreen}
-className="w-9 h-9 bg-black/70 border border-white/20 rounded flex items-center justify-center text-white">
-⛶
-</button>
+<div className="controls"><button onClick={zoomIn}>+</button>
+<button onClick={zoomOut}>−</button>
+<button onClick={fullscreen}>⛶</button>
 
 </div><style>{`
 
@@ -133,17 +121,37 @@ top:50%;
 left:50%;
 width:420px;
 height:420px;
-margin-left:-210px;
-margin-top:-210px;
+transform:translate(-50%,-50%);
 border-radius:50%;
-border:2px solid rgba(0,255,150,0.35);
+border:2px solid rgba(0,255,150,0.4);
 pointer-events:none;
 animation:spin 6s linear infinite;
 }
 
 @keyframes spin{
-0%{transform:rotate(0deg)}
-100%{transform:rotate(360deg)}
+0%{transform:translate(-50%,-50%) rotate(0deg);}
+100%{transform:translate(-50%,-50%) rotate(360deg);}
+}
+
+.controls{
+position:absolute;
+bottom:20px;
+right:20px;
+display:flex;
+flex-direction:column;
+gap:8px;
+z-index:10;
+}
+
+.controls button{
+width:36px;
+height:36px;
+background:rgba(0,0,0,0.7);
+border:1px solid rgba(255,255,255,0.2);
+border-radius:6px;
+color:white;
+font-size:16px;
+cursor:pointer;
 }
 
 `}</style></div>);
