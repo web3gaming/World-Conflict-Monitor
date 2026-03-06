@@ -15,7 +15,6 @@ const [loading, setLoading] = useState(true);
 const [selectedIncident, setSelectedIncident] = useState<Incident | null>(null);
 const [lastUpdated, setLastUpdated] = useState(new Date());
 const [alertIncident, setAlertIncident] = useState<Incident | null>(null);
-const [lastTweetId, setLastTweetId] = useState<string | null>(null);
 
 const monitoredSources: MonitoredSource[] = [
 { id: "1", url: "https://x.com/ALERTX360", handle: "@ALERTX360", label: "AlertX360" },
@@ -50,9 +49,8 @@ return () => clearInterval(interval);
 
 }, []);
 
-/* ========================= */
-/* TWITTER ALERT MONITOR */
-/* ========================= */
+
+/* TWITTER MONITOR */
 
 useEffect(() => {
 
@@ -70,33 +68,21 @@ if (!tweet) return;
 
 const tweetId = tweet.url;
 
-/* prevent duplicate popup */
+const stored = localStorage.getItem("lastTweetId");
 
-if (tweetId === lastTweetId) return;
+if (stored === tweetId) return;
 
-/* CLEAN RSS TEXT */
-
-const cleanText = tweet.text
-.replace(/<!\[CDATA\[/g,"")
-.replace(/\]\]>/g,"")
-.replace(/\[[^\]]*\]/g,"")
-.replace(/[^\x00-\x7F]/g,"")
-.replace(/https?:\/\/\S+/g,"")
-.trim();
+/* SHOW TWEET EXACTLY AS IS */
 
 const incident: Incident = {
-
 id: tweetId,
-title: cleanText,
-description: cleanText,
+title: tweet.text,
+description: tweet.text,
 timestamp: tweet.time,
 location: { name: "Signal Intelligence", lat: 33, lng: 44 },
 severity: "high",
 sourceUrl: tweet.url
-
 };
-
-/* trigger popup */
 
 setAlertIncident(incident);
 
@@ -104,7 +90,7 @@ setTimeout(() => {
 setAlertIncident(null);
 }, 8000);
 
-setLastTweetId(tweetId);
+localStorage.setItem("lastTweetId", tweetId);
 
 } catch (error) {
 
@@ -120,21 +106,17 @@ const interval = setInterval(checkTwitter, 10000);
 
 return () => clearInterval(interval);
 
-}, [lastTweetId]);
+}, []);
 
 return (
 
 <div className="flex flex-col h-screen bg-[#050505] text-white font-sans">
-
-{/* ALERT POPUP */}
 
 <AnimatePresence>
 {alertIncident && (
 <AlertPopup incident={alertIncident}/>
 )}
 </AnimatePresence>
-
-{/* HEADER */}
 
 <header className="h-14 border-b border-white/10 flex items-center justify-between px-6 bg-[#0a0a0a]">
 
@@ -145,7 +127,6 @@ return (
 </div>
 
 <div>
-
 <h1 className="text-sm font-bold uppercase">
 Global Conflict Monitor
 </h1>
@@ -153,7 +134,6 @@ Global Conflict Monitor
 <span className="text-[9px] font-mono text-white/40 uppercase">
 Strategic Intelligence Network
 </span>
-
 </div>
 
 </div>
@@ -173,8 +153,6 @@ Sync
 </button>
 
 </header>
-
-{/* MAIN */}
 
 <main className="flex flex-1 overflow-hidden">
 
@@ -204,8 +182,6 @@ selectedIncidentId={selectedIncident?.id}
 
 </div>
 
-{/* LIVE SIGNAL FEED */}
-
 <div className="w-[360px] hidden lg:block">
 
 <div className="h-full bg-[#0d0d0d] border border-white/10 rounded-xl overflow-hidden">
@@ -223,7 +199,9 @@ data-height="700"
 data-chrome="nofooter noborders transparent"
 href="https://twitter.com/ALERTX360"
 >
+
 Tweets by ALERTX360
+
 </a>
 
 </div>
@@ -233,8 +211,6 @@ Tweets by ALERTX360
 </div>
 
 </div>
-
-{/* INCIDENT PANEL */}
 
 <AnimatePresence>
 
