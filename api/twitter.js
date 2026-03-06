@@ -1,8 +1,8 @@
 export default async function handler(req, res) {
 
   const sources = [
-    "https://nitter.net/MonitorX99800/rss",
-    "https://nitter.net/ALERTX360/rss"
+    "https://rsshub.app/x/user/MonitorX99800",
+    "https://rsshub.app/x/user/ALERTX360"
   ];
 
   try {
