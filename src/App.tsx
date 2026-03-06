@@ -15,7 +15,9 @@ const [selectedIncident, setSelectedIncident] = useState<Incident | null>(null);
 const [lastUpdated, setLastUpdated] = useState(new Date());
 const [alertIncident, setAlertIncident] = useState<Incident | null>(null);
 
-const [lastTweetTime, setLastTweetTime] = useState<number>(0);
+const [lastTweetId, setLastTweetId] = useState<string | null>(() => {
+return localStorage.getItem("lastTweetId");
+});
 
 const monitoredSources: MonitoredSource[] = [
 { id: '1', url: 'https://x.com/ALERTX360', handle: '@ALERTX360', label: 'AlertX360' },
@@ -28,7 +30,6 @@ if (isInitial) setLoading(true);
 
 const data = await fetchLatestIncidents(monitoredSources);
 
-/* Detect NEW incident */
 if (!isInitial && data.length > 0 && incidents.length > 0) {
 
 const latestExisting = new Date(incidents[0].timestamp).getTime();
@@ -64,7 +65,6 @@ setLastUpdated(new Date());
 
 };
 
-/* Gemini / RSS refresh */
 useEffect(() => {
 
 loadData(true);
@@ -75,8 +75,7 @@ return () => clearInterval(interval);
 
 }, []);
 
-
-/* ---------- TWITTER MONITOR ---------- */
+/* TWITTER MONITOR */
 
 useEffect(() => {
 
@@ -92,16 +91,21 @@ if (!data.success) return;
 const tweet = data.tweets[0];
 if (!tweet) return;
 
-const tweetTime = new Date(tweet.time).getTime();
+const tweetId = tweet.url;
 
-if (tweetTime > lastTweetTime) {
+if (tweetId === lastTweetId) return;
 
-setLastTweetTime(tweetTime);
+/* Clean RSS text /
+const cleanText = tweet.text
+.replace(/<!CDATA[/g, '')
+.replace(/]>/g, '')
+.replace(/<[^>]>/g, '')
+.trim();
 
 const incident: Incident = {
-id: tweet.url,
-title: tweet.text,
-description: tweet.text,
+id: tweetId,
+title: cleanText,
+description: cleanText,
 timestamp: tweet.time,
 location: { name: 'Signal Intelligence', lat: 33, lng: 44 },
 severity: 'high',
@@ -114,7 +118,8 @@ setTimeout(() => {
 setAlertIncident(null);
 }, 7000);
 
-}
+setLastTweetId(tweetId);
+localStorage.setItem("lastTweetId", tweetId);
 
 } catch (err) {
 console.error("Twitter monitor error", err);
@@ -124,189 +129,82 @@ console.error("Twitter monitor error", err);
 
 checkTwitter();
 
-const interval = setInterval(checkTwitter, 20000);
+const interval = setInterval(checkTwitter, 15000);
 
 return () => clearInterval(interval);
 
-}, [lastTweetTime]);
-
-/* ---------- UI ---------- */
+}, [lastTweetId]);
 
 return (
 
-<div className="flex flex-col h-screen bg-[#050505] text-white font-sans">
-
-{/* Alert Popup */}
-
-<AnimatePresence>
-
-{alertIncident && (
+<div className="flex flex-col h-screen bg-[#050505] text-white font-sans"><AnimatePresence>{alertIncident && (
 
 <motion.div
 initial={{ y: -120, opacity: 0 }}
 animate={{ y: 20, opacity: 1 }}
 exit={{ y: -120, opacity: 0 }}
 className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-red-600 px-6 py-4 rounded-xl flex items-center gap-4 shadow-2xl max-w-xl"
->
 
-<div className="flex flex-col">
+«»
 
-<span className="text-xs uppercase tracking-widest font-bold">
+<div className="flex flex-col"><span className="text-xs uppercase tracking-widest font-bold">
 SIGNAL DETECTED
-</span>
-
-<span className="text-sm font-semibold">
+</span><span className="text-sm font-semibold">
 {alertIncident.title}
-</span>
-
-<span className="text-[11px] text-white/80">
+</span><span className="text-[11px] text-white/80">
 Location: {alertIncident.location.name}
-</span>
-
-</div>
-
-</motion.div>
+</span></div></motion.div>
 
 )}
 
-</AnimatePresence>
-
-
-{/* HEADER */}
-
-<header className="h-14 border-b border-white/10 flex items-center justify-between px-6 bg-[#0a0a0a]">
-
-<div className="flex items-center gap-3">
-
-<div className="w-8 h-8 bg-red-600 rounded flex items-center justify-center">
+</AnimatePresence><header className="h-14 border-b border-white/10 flex items-center justify-between px-6 bg-[#0a0a0a]"><div className="flex items-center gap-3"><div className="w-8 h-8 bg-red-600 rounded flex items-center justify-center">
 <ShieldAlert size={18}/>
-</div>
-
-<div>
-
-<h1 className="text-sm font-bold uppercase">
+</div><div><h1 className="text-sm font-bold uppercase">
 Global Conflict Monitor
-</h1>
-
-<span className="text-[9px] font-mono text-white/40 uppercase">
+</h1><span className="text-[9px] font-mono text-white/40 uppercase">
 Strategic Intelligence Network
-</span>
-
-</div>
-
-</div>
-
-<div className="flex items-center gap-6">
-
-<div className="flex flex-col text-right">
-
-<div className="flex items-center gap-2 justify-end">
-
-<div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-
-<span className="text-[10px] text-green-400 uppercase tracking-widest">
+</span></div></div><div className="flex items-center gap-6"><div className="flex flex-col text-right"><div className="flex items-center gap-2 justify-end"><div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div><span className="text-[10px] text-green-400 uppercase tracking-widest">
 INTEL GRID ACTIVE
-</span>
-
-</div>
-
-<span className="text-[9px] text-white/40 uppercase">
+</span></div><span className="text-[9px] text-white/40 uppercase">
 Nodes: {monitoredSources.length} | Sync: 30s
-</span>
-
-</div>
-
-<button
+</span></div><button
 onClick={() => loadData(false)}
 disabled={loading}
 className="flex items-center gap-2 px-3 py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded"
->
+
+«»
 
 <RefreshCw size={14} className={loading ? "animate-spin" : ""}/>
 
 <span className="text-[10px] uppercase">
 Sync
-</span>
-
-</button>
-
-</div>
-
-</header>
-
-
-{/* MAIN */}
-
-<main className="flex flex-1 overflow-hidden">
-
-<aside className="w-80 hidden md:block">
-
-<IncidentFeed
+</span></button></div></header><main className="flex flex-1 overflow-hidden"><aside className="w-80 hidden md:block"><IncidentFeed
 incidents={incidents}
 onSelectIncident={setSelectedIncident}
 selectedIncidentId={selectedIncident?.id}
 />
 
-</aside>
-
-<section className="flex-1 flex flex-col relative">
-
-<StatsPanel incidents={incidents}/>
-
-<div className="flex flex-1 gap-4 p-4">
-
-<div className="flex-1">
-
-<Map
+</aside><section className="flex-1 flex flex-col relative"><StatsPanel incidents={incidents}/><div className="flex flex-1 gap-4 p-4"><div className="flex-1"><Map
 incidents={incidents}
 onSelectIncident={setSelectedIncident}
 selectedIncidentId={selectedIncident?.id}
 />
 
-</div>
-
-{/* X SIGNAL FEED (UNCHANGED) */}
-
-<div className="w-[360px] hidden lg:block">
-
-<div className="h-full bg-[#0d0d0d] border border-white/10 rounded-xl overflow-hidden">
-
-<div className="px-4 py-2 border-b border-white/10 text-xs uppercase tracking-widest text-white/50">
+</div><div className="w-[360px] hidden lg:block"><div className="h-full bg-[#0d0d0d] border border-white/10 rounded-xl overflow-hidden"><div className="px-4 py-2 border-b border-white/10 text-xs uppercase tracking-widest text-white/50">
 Live Signal Feed
-</div>
-
-<div className="h-[calc(100%-32px)] overflow-y-auto p-2">
-
-<a
+</div><div className="h-[calc(100%-32px)] overflow-y-auto p-2"><a
 className="twitter-timeline"
 data-theme="dark"
 data-height="700"
 data-chrome="nofooter noborders transparent"
 href="https://twitter.com/ALERTX360"
->
+
+«»
 
 Tweets by ALERTX360
 
-</a>
-
-</div>
-
-</div>
-
-</div>
-
-</div>
-
-</section>
-
-</main>
-
-<footer className="h-8 bg-[#111] border-t border-white/10 flex items-center px-4 text-[10px] text-white/40">
+</a></div></div></div></div></section></main><footer className="h-8 bg-[#111] border-t border-white/10 flex items-center px-4 text-[10px] text-white/40">
 Last Sync: {lastUpdated.toLocaleTimeString()}
-</footer>
-
-</div>
-
-);
+</footer></div>);
 
 }
