@@ -73,7 +73,7 @@ points.append('circle')
     if (d.severity === 'high') return '#f97316';
     return '#eab308';
   })
-  .attr('opacity', 0.9);
+  .attr('opacity', 0.8);
 
 const zoom = d3.zoom()
   .scaleExtent([1, 8])
@@ -82,6 +82,7 @@ const zoom = d3.zoom()
   });
 
 zoomRef.current = zoom;
+
 svg.call(zoom as any);
 
 }, [worldData, incidents]);
@@ -98,46 +99,42 @@ d3.select(svgRef.current).transition().call(zoomRef.current.scaleBy, 0.7);
 
 const toggleFullscreen = () => {
 if (!containerRef.current) return;
-
 if (!document.fullscreenElement) {
-  containerRef.current.requestFullscreen();
+containerRef.current.requestFullscreen();
 } else {
-  document.exitFullscreen();
+document.exitFullscreen();
 }
-
 };
 
 return (
-<div
-ref={containerRef}
-className="relative w-full h-full bg-[#0a0a0a] overflow-hidden rounded-xl border border-white/5"
->
+
+<div ref={containerRef} className="relative w-full h-full bg-[#0a0a0a] overflow-hidden rounded-xl border border-white/5">
 
   <svg ref={svgRef} className="w-full h-full" />
 
-  {/* Radar */}
+  {/* Radar Sweep */}
   <div className="radar-overlay"></div>
 
-  {/* Map Controls */}
-  <div className="absolute bottom-6 right-6 flex flex-col gap-2 z-20">
+  {/* Controls */}
+  <div className="absolute right-4 top-4 flex flex-col gap-2 z-20">
 
     <button
       onClick={zoomIn}
-      className="w-9 h-9 bg-black/60 border border-white/20 rounded flex items-center justify-center hover:bg-black/80 text-white"
+      className="w-9 h-9 bg-black/60 border border-white/20 rounded flex items-center justify-center hover:bg-black/80"
     >
       +
     </button>
 
     <button
       onClick={zoomOut}
-      className="w-9 h-9 bg-black/60 border border-white/20 rounded flex items-center justify-center hover:bg-black/80 text-white"
+      className="w-9 h-9 bg-black/60 border border-white/20 rounded flex items-center justify-center hover:bg-black/80"
     >
       −
     </button>
 
     <button
       onClick={toggleFullscreen}
-      className="w-9 h-9 bg-black/60 border border-white/20 rounded flex items-center justify-center hover:bg-black/80 text-white"
+      className="w-9 h-9 bg-black/60 border border-white/20 rounded flex items-center justify-center hover:bg-black/80"
     >
       ⛶
     </button>
@@ -152,20 +149,20 @@ className="relative w-full h-full bg-[#0a0a0a] overflow-hidden rounded-xl border
       left:0;
       width:100%;
       height:100%;
-      display:flex;
-      align-items:center;
-      justify-content:center;
       pointer-events:none;
+      background: radial-gradient(circle at center, transparent 60%, rgba(0,255,150,0.05) 100%);
     }
 
     .radar-overlay::after{
       content:"";
-      width:420px;
-      height:420px;
+      position:absolute;
+      width:60%;
+      height:60%;
+      top:20%;
+      left:20%;
       border-radius:50%;
       border:2px solid rgba(0,255,150,0.25);
-      position:absolute;
-      animation:radarSweep 6s linear infinite;
+      animation:radarSweep 5s linear infinite;
     }
 
     @keyframes radarSweep{
@@ -178,6 +175,7 @@ className="relative w-full h-full bg-[#0a0a0a] overflow-hidden rounded-xl border
 </div>
 
 );
+
 };
 
 export default Map;
