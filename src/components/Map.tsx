@@ -4,9 +4,9 @@ import * as topojson from 'topojson-client';
 import { Incident } from '../types';
 
 interface MapProps {
-incidents: Incident[];
-onSelectIncident: (incident: Incident) => void;
-selectedIncidentId?: string;
+  incidents: Incident[];
+  onSelectIncident: (incident: Incident) => void;
+  selectedIncidentId?: string;
 }
 
 const Map: React.FC<MapProps> = ({ incidents, onSelectIncident }) => {
@@ -114,6 +114,9 @@ return (
 
   <svg ref={svgRef} className="w-full h-full" />
 
+  {/* Radar Sweep Overlay */}
+  <div className="radar-overlay"></div>
+
   {incidents.length === 0 && (
 
     <div className="absolute inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm">
@@ -147,6 +150,37 @@ return (
     </div>
 
   </div>
+
+<style>{`
+
+.radar-overlay{
+position:absolute;
+top:0;
+left:0;
+width:100%;
+height:100%;
+pointer-events:none;
+background: radial-gradient(circle at center, transparent 60%, rgba(0,255,150,0.05) 100%);
+}
+
+.radar-overlay::after{
+content:"";
+position:absolute;
+width:60%;
+height:60%;
+top:20%;
+left:20%;
+border-radius:50%;
+border:2px solid rgba(0,255,150,0.2);
+animation:radarSweep 6s linear infinite;
+}
+
+@keyframes radarSweep{
+0%{transform:rotate(0deg);}
+100%{transform:rotate(360deg);}
+}
+
+`}</style>
 
 </div>
 
