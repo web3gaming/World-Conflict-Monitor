@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from "react";
 import { Incident, MonitoredSource } from "./types";
 import { fetchLatestIncidents } from "./services/gemini";
-import Map from "./components/Map.tsx";
-import IncidentFeed from "./components/IncidentFeed.tsx";
-import StatsPanel from "./components/StatsPanel.tsx";
-import AlertPopup from "./components/AlertPopup.tsx";
+import Map from "./components/Map";
+import IncidentFeed from "./components/IncidentFeed";
+import StatsPanel from "./components/StatsPanel";
+import AlertPopup from "./components/AlertPopup";
 import { RefreshCw, ShieldAlert, X, ExternalLink } from "lucide-react";
 import { AnimatePresence } from "motion/react";
 
@@ -17,106 +17,115 @@ const [lastUpdated, setLastUpdated] = useState(new Date());
 const [alertIncident, setAlertIncident] = useState<Incident | null>(null);
 
 const monitoredSources: MonitoredSource[] = [
-{ id: "1", url: "https://x.com/ALERTX360", handle: "@ALERTX360", label: "AlertX360" },
-{ id: "2", url: "https://x.com/MonitorX99800", handle: "@MonitorX99800", label: "MonitorX" }
+{ id:"1", url:"https://x.com/ALERTX360", handle:"@ALERTX360", label:"AlertX360" },
+{ id:"2", url:"https://x.com/MonitorX99800", handle:"@MonitorX99800", label:"MonitorX" }
 ];
 
-const loadData = async (isInitial = false) => {
+const loadData = async (isInitial=false) => {
 
-if (isInitial) setLoading(true);
+if(isInitial) setLoading(true)
 
-const data = await fetchLatestIncidents(monitoredSources);
+const data = await fetchLatestIncidents(monitoredSources)
 
-setIncidents(data);
+setIncidents(data)
 
-if (selectedIncident) {
-const updated = data.find(i => i.id === selectedIncident.id);
-if (updated) setSelectedIncident(updated);
+if(selectedIncident){
+const updated = data.find(i=>i.id===selectedIncident.id)
+if(updated) setSelectedIncident(updated)
 }
 
-setLoading(false);
-setLastUpdated(new Date());
+setLoading(false)
+setLastUpdated(new Date())
 
-};
+}
 
-useEffect(() => {
-
-loadData(true);
-
-const interval = setInterval(() => loadData(false), 30000);
-
-return () => clearInterval(interval);
-
-}, []);
+useEffect(()=>{
+loadData(true)
+const interval=setInterval(()=>loadData(false),30000)
+return ()=>clearInterval(interval)
+},[])
 
 
-/* TWITTER MONITOR */
+/* ---------- TWITTER MONITOR ---------- */
 
-useEffect(() => {
+useEffect(()=>{
 
-const checkTwitter = async () => {
+const checkTwitter=async()=>{
 
-try {
+try{
 
-const res = await fetch("/api/twitter");
-const data = await res.json();
+const res = await fetch("/api/twitter")
+const data = await res.json()
 
-if (!data.success) return;
+if(!data.success) return
 
-const tweet = data.tweets?.[0];
-if (!tweet) return;
+const tweet = data.tweets?.[0]
+if(!tweet) return
 
-const tweetId = tweet.url;
+const tweetId = tweet.url
 
-const stored = localStorage.getItem("lastTweetId");
+const lastSeen = localStorage.getItem("lastTweetId")
+if(lastSeen===tweetId) return
 
-if (stored === tweetId) return;
 
-/* SHOW TWEET EXACTLY AS IS */
+/* CLEAN RSS MARKERS (USILLB, IRUS etc) */
+
+let text = tweet.text || ""
+
+text = text
+.replace(/<!\[CDATA\[/g,"")
+.replace(/\]\]>/g,"")
+.replace(/<[^>]*>/g,"")
+.replace(/^[A-Z]{2,10}\s*/,"")
+.trim()
+
 
 const incident: Incident = {
-id: tweetId,
-title: tweet.text,
-description: tweet.text,
-timestamp: tweet.time,
-location: { name: "Signal Intelligence", lat: 33, lng: 44 },
-severity: "high",
-sourceUrl: tweet.url
-};
 
-setAlertIncident(incident);
-
-setTimeout(() => {
-setAlertIncident(null);
-}, 8000);
-
-localStorage.setItem("lastTweetId", tweetId);
-
-} catch (error) {
-
-console.error("Twitter monitor error:", error);
+id:tweetId,
+title:text,
+description:text,
+timestamp:tweet.time,
+location:{ name:"Signal Intelligence", lat:33, lng:44 },
+severity:"high",
+sourceUrl:tweet.url
 
 }
 
-};
+setAlertIncident(incident)
 
-checkTwitter();
+setTimeout(()=>{
+setAlertIncident(null)
+},8000)
 
-const interval = setInterval(checkTwitter, 10000);
+localStorage.setItem("lastTweetId",tweetId)
 
-return () => clearInterval(interval);
+}catch(err){
 
-}, []);
+console.error("Twitter monitor error:",err)
 
-return (
+}
+
+}
+
+checkTwitter()
+
+const interval=setInterval(checkTwitter,10000)
+
+return ()=>clearInterval(interval)
+
+},[])
+
+
+return(
 
 <div className="flex flex-col h-screen bg-[#050505] text-white font-sans">
 
+
 <AnimatePresence>
-{alertIncident && (
-<AlertPopup incident={alertIncident}/>
-)}
+{alertIncident && <AlertPopup incident={alertIncident}/>}
 </AnimatePresence>
+
 
 <header className="h-14 border-b border-white/10 flex items-center justify-between px-6 bg-[#0a0a0a]">
 
@@ -127,6 +136,7 @@ return (
 </div>
 
 <div>
+
 <h1 className="text-sm font-bold uppercase">
 Global Conflict Monitor
 </h1>
@@ -134,17 +144,18 @@ Global Conflict Monitor
 <span className="text-[9px] font-mono text-white/40 uppercase">
 Strategic Intelligence Network
 </span>
+
 </div>
 
 </div>
 
 <button
-onClick={() => loadData(false)}
+onClick={()=>loadData(false)}
 disabled={loading}
 className="flex items-center gap-2 px-3 py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded"
 >
 
-<RefreshCw size={14} className={loading ? "animate-spin" : ""}/>
+<RefreshCw size={14} className={loading?"animate-spin":""}/>
 
 <span className="text-[10px] uppercase">
 Sync
@@ -153,6 +164,8 @@ Sync
 </button>
 
 </header>
+
+
 
 <main className="flex flex-1 overflow-hidden">
 
@@ -166,9 +179,12 @@ selectedIncidentId={selectedIncident?.id}
 
 </aside>
 
+
+
 <section className="flex-1 flex flex-col relative">
 
 <StatsPanel incidents={incidents}/>
+
 
 <div className="flex flex-1 gap-4 p-4">
 
@@ -177,10 +193,10 @@ selectedIncidentId={selectedIncident?.id}
 <Map
 incidents={incidents}
 onSelectIncident={setSelectedIncident}
-selectedIncidentId={selectedIncident?.id}
 />
 
 </div>
+
 
 <div className="w-[360px] hidden lg:block">
 
@@ -212,6 +228,8 @@ Tweets by ALERTX360
 
 </div>
 
+
+
 <AnimatePresence>
 
 {selectedIncident && (
@@ -224,7 +242,7 @@ Tweets by ALERTX360
 {selectedIncident.title}
 </h2>
 
-<button onClick={() => setSelectedIncident(null)}>
+<button onClick={()=>setSelectedIncident(null)}>
 <X size={18}/>
 </button>
 
@@ -257,16 +275,21 @@ View Source
 
 </AnimatePresence>
 
+
 </section>
 
 </main>
 
+
 <footer className="h-8 bg-[#111] border-t border-white/10 flex items-center px-4 text-[10px] text-white/40">
+
 Last Sync: {lastUpdated.toLocaleTimeString()}
+
 </footer>
+
 
 </div>
 
-);
+)
 
 }
