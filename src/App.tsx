@@ -47,7 +47,31 @@ return ()=>clearInterval(interval)
 
 
 
-/* ---------------- TWITTER ALERT SYSTEM ---------------- */
+/* ---------- CLEAN RSS TEXT ---------- */
+
+function cleanTweetText(raw:string){
+
+if(!raw) return ""
+
+let text = raw
+
+text = text.replace(/<!\[CDATA\[/g,"")
+text = text.replace(/\]\]>/g,"")
+text = text.replace(/<[^>]*>/g,"")
+
+/* remove ISO country codes like US IL LB IR etc */
+
+text = text.replace(/^([A-Z]{2}\s*){1,8}/,"")
+
+text = text.trim()
+
+return text
+
+}
+
+
+
+/* ---------- TWITTER MONITOR ---------- */
 
 useEffect(()=>{
 
@@ -65,29 +89,17 @@ if(!tweet) return
 
 const tweetId = tweet.url
 
-/* prevent repeated alerts */
-
 const lastSeen = localStorage.getItem("lastTweetId")
+
 if(lastSeen===tweetId) return
 
-
-/* CLEAN RSS FEED GARBAGE */
-
-let text = tweet.text || ""
-
-text = text
-.replace(/<!\[CDATA\[/g,"")
-.replace(/\]\]>/g,"")
-.replace(/<[^>]*>/g,"")
-.replace(/^([A-Z]{2,4}\s*)+/,"")   // removes US IL LB IR etc
-.trim()
-
+const cleanedText = cleanTweetText(tweet.text || "")
 
 const incident: Incident = {
 
 id:tweetId,
-title:text,
-description:text,
+title:cleanedText,
+description:cleanedText,
 timestamp:tweet.time,
 location:{ name:"Signal Intelligence", lat:33, lng:44 },
 severity:"high",
@@ -95,13 +107,11 @@ sourceUrl:tweet.url
 
 }
 
-
 setAlertIncident(incident)
 
 setTimeout(()=>{
 setAlertIncident(null)
 },8000)
-
 
 localStorage.setItem("lastTweetId",tweetId)
 
