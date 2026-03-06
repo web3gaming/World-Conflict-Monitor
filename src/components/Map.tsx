@@ -14,7 +14,6 @@ const Map: React.FC<MapProps> = ({ incidents, onSelectIncident }) => {
 const svgRef = useRef<SVGSVGElement>(null);
 const containerRef = useRef<HTMLDivElement>(null);
 const zoomRef = useRef<any>(null);
-
 const [worldData, setWorldData] = useState<any>(null);
 
 useEffect(() => {
@@ -34,8 +33,8 @@ const height = svgRef.current.clientHeight;
 svg.selectAll('*').remove();
 
 const projection = d3.geoMercator()
-.scale(width / 6.5)
-.translate([width / 2, height / 1.5]);
+  .scale(width / 6.5)
+  .translate([width / 2, height / 1.5]);
 
 const path = d3.geoPath().projection(projection);
 
@@ -44,65 +43,43 @@ const g = svg.append('g');
 const countries = topojson.feature(worldData, worldData.objects.countries) as any;
 
 g.selectAll('path')
-.data(countries.features)
-.enter()
-.append('path')
-.attr('d', path as any)
-.attr('fill', '#1a1a1a')
-.attr('stroke', '#333')
-.attr('stroke-width', 0.5);
+  .data(countries.features)
+  .enter()
+  .append('path')
+  .attr('d', path as any)
+  .attr('fill', '#1a1a1a')
+  .attr('stroke', '#333')
+  .attr('stroke-width', 0.5);
 
 const points = g.selectAll('.incident-point')
-.data(incidents)
-.enter()
-.append('g')
-.attr('class', 'incident-point')
-.attr('transform', d => {
-const coords = projection([d.location.lng, d.location.lat]);
-return coords ? "translate(${coords[0]}, ${coords[1]})" : '';
-})
-.style('cursor', 'pointer')
-.on('click', function (event, d) {
-event.stopPropagation();
-onSelectIncident(d);
-});
+  .data(incidents)
+  .enter()
+  .append('g')
+  .attr('class', 'incident-point')
+  .attr('transform', d => {
+    const coords = projection([d.location.lng, d.location.lat]);
+    return coords ? `translate(${coords[0]}, ${coords[1]})` : '';
+  })
+  .style('cursor', 'pointer')
+  .on('click', function (event, d) {
+    event.stopPropagation();
+    onSelectIncident(d);
+  });
 
 points.append('circle')
-.attr('r', d => d.severity === 'critical' ? 8 : 4)
-.attr('fill', d => {
-if (d.severity === 'critical') return '#ef4444';
-if (d.severity === 'high') return '#f97316';
-return '#eab308';
-})
-.attr('opacity', 0.8);
-
-points.filter(d => d.severity === 'critical' || d.severity === 'high')
-.append('circle')
-.attr('r', 4)
-.attr('fill', 'none')
-.attr('stroke', d => d.severity === 'critical' ? '#ef4444' : '#f97316')
-.attr('stroke-width', 1)
-.append('animate')
-.attr('attributeName', 'r')
-.attr('from', '4')
-.attr('to', '20')
-.attr('dur', '1.5s')
-.attr('repeatCount', 'indefinite');
-
-points.filter(d => d.severity === 'critical' || d.severity === 'high')
-.select('circle:last-child')
-.append('animate')
-.attr('attributeName', 'opacity')
-.attr('from', '0.8')
-.attr('to', '0')
-.attr('dur', '1.5s')
-.attr('repeatCount', 'indefinite');
+  .attr('r', d => d.severity === 'critical' ? 8 : 4)
+  .attr('fill', d => {
+    if (d.severity === 'critical') return '#ef4444';
+    if (d.severity === 'high') return '#f97316';
+    return '#eab308';
+  })
+  .attr('opacity', 0.8);
 
 const zoom = d3.zoom()
-.scaleExtent([1, 8])
-.on('zoom', (event) => {
-g.attr('transform', event.transform);
-});
+  .scaleExtent([1, 8])
+  .on('zoom', (event) => {
+    g.attr('transform', event.transform);
+  });
 
 zoomRef.current = zoom;
 
@@ -122,7 +99,6 @@ d3.select(svgRef.current).transition().call(zoomRef.current.scaleBy, 0.7);
 
 const toggleFullscreen = () => {
 if (!containerRef.current) return;
-
 if (!document.fullscreenElement) {
 containerRef.current.requestFullscreen();
 } else {
@@ -132,78 +108,73 @@ document.exitFullscreen();
 
 return (
 
-<div ref={containerRef} className="relative w-full h-full bg-[#0a0a0a] overflow-hidden rounded-xl border border-white/5"><svg ref={svgRef} className="w-full h-full"/>{/* Radar Sweep Overlay */}
+<div ref={containerRef} className="relative w-full h-full bg-[#0a0a0a] overflow-hidden rounded-xl border border-white/5">
 
-<div className="radar-overlay"/>{/* Map Controls */}
+  <svg ref={svgRef} className="w-full h-full" />
 
-<div className="absolute right-4 top-4 flex flex-col gap-2 z-20"><button
-onClick={zoomIn}
-className="w-9 h-9 bg-black/60 border border-white/20 rounded flex items-center justify-center hover:bg-black/80"
+  {/* Radar Sweep */}
+  <div className="radar-overlay"></div>
 
-«»
+  {/* Controls */}
+  <div className="absolute right-4 top-4 flex flex-col gap-2 z-20">
 
-+ 
+    <button
+      onClick={zoomIn}
+      className="w-9 h-9 bg-black/60 border border-white/20 rounded flex items-center justify-center hover:bg-black/80"
+    >
+      +
+    </button>
 
-</button><button
-onClick={zoomOut}
-className="w-9 h-9 bg-black/60 border border-white/20 rounded flex items-center justify-center hover:bg-black/80"
+    <button
+      onClick={zoomOut}
+      className="w-9 h-9 bg-black/60 border border-white/20 rounded flex items-center justify-center hover:bg-black/80"
+    >
+      −
+    </button>
 
-«»
+    <button
+      onClick={toggleFullscreen}
+      className="w-9 h-9 bg-black/60 border border-white/20 rounded flex items-center justify-center hover:bg-black/80"
+    >
+      ⛶
+    </button>
 
-−
-</button>
+  </div>
 
-<button
-onClick={toggleFullscreen}
-className="w-9 h-9 bg-black/60 border border-white/20 rounded flex items-center justify-center hover:bg-black/80"
+  <style>{`
 
-«»
+    .radar-overlay{
+      position:absolute;
+      top:0;
+      left:0;
+      width:100%;
+      height:100%;
+      pointer-events:none;
+      background: radial-gradient(circle at center, transparent 60%, rgba(0,255,150,0.05) 100%);
+    }
 
-⛶
-</button>
+    .radar-overlay::after{
+      content:"";
+      position:absolute;
+      width:60%;
+      height:60%;
+      top:20%;
+      left:20%;
+      border-radius:50%;
+      border:2px solid rgba(0,255,150,0.25);
+      animation:radarSweep 5s linear infinite;
+    }
 
-</div>{incidents.length === 0 && (
+    @keyframes radarSweep{
+      0%{transform:rotate(0deg);}
+      100%{transform:rotate(360deg);}
+    }
 
-<div className="absolute inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm"><div className="flex flex-col items-center gap-4"><div className="w-12 h-12 border-4 border-red-600 border-t-transparent rounded-full animate-spin"/><div className="text-[10px] font-mono uppercase tracking-widest text-white/40">
-Synchronizing Global Intelligence...
-</div></div></div>)}
+  `}</style>
 
-<div className="absolute bottom-4 left-4 flex flex-col gap-2 pointer-events-none"><div className="flex items-center gap-2 text-[10px] uppercase tracking-widest text-white/50">
-<div className="w-2 h-2 rounded-full bg-red-500"/> Critical Incident
-</div><div className="flex items-center gap-2 text-[10px] uppercase tracking-widest text-white/50">
-<div className="w-2 h-2 rounded-full bg-orange-500"/> High Alert
-</div><div className="flex items-center gap-2 text-[10px] uppercase tracking-widest text-white/50">
-<div className="w-2 h-2 rounded-full bg-yellow-500"/> Active Movement
-</div></div><style>{`
+</div>
 
-.radar-overlay{
-position:absolute;
-top:0;
-left:0;
-width:100%;
-height:100%;
-pointer-events:none;
-background: radial-gradient(circle at center, transparent 60%, rgba(0,255,150,0.05) 100%);
-}
-
-.radar-overlay::after{
-content:"";
-position:absolute;
-width:60%;
-height:60%;
-top:20%;
-left:20%;
-border-radius:50%;
-border:2px solid rgba(0,255,150,0.25);
-animation:radarSweep 5s linear infinite;
-}
-
-@keyframes radarSweep{
-0%{transform:rotate(0deg);}
-100%{transform:rotate(360deg);}
-}
-
-`}</style></div>);
+);
 
 };
 
