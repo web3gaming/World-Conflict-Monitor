@@ -31,6 +31,7 @@ const width = svgRef.current.clientWidth
 const height = svgRef.current.clientHeight
 
 /* draw map only once */
+
 if (!gRef.current) {
 
 const projection = d3.geoMercator()
@@ -54,7 +55,8 @@ g.selectAll('path')
 .attr('stroke', '#333')
 .attr('stroke-width', 0.5)
 
-/* zoom */
+/* zoom system */
+
 const zoom = d3.zoom()
 .scaleExtent([1,8])
 .on('zoom', (event) => {
@@ -62,6 +64,9 @@ g.attr('transform', event.transform)
 })
 
 svg.call(zoom as any)
+
+gRef.current.zoom = zoom
+gRef.current.svg = svg
 
 }
 
@@ -122,13 +127,67 @@ return coords ? `translate(${coords[0]},${coords[1]})` : ''
 
 }, [worldData, incidents])
 
+/* zoom controls */
+
+const zoomIn = () => {
+if (!gRef.current) return
+gRef.current.svg.transition().call(
+gRef.current.zoom.scaleBy,
+1.2
+)
+}
+
+const zoomOut = () => {
+if (!gRef.current) return
+gRef.current.svg.transition().call(
+gRef.current.zoom.scaleBy,
+0.8
+)
+}
+
+const fullscreen = () => {
+const element = svgRef.current?.parentElement
+if (!element) return
+
+if (!document.fullscreenElement) {
+element.requestFullscreen()
+} else {
+document.exitFullscreen()
+}
+}
+
 return (
 
 <div className="relative w-full h-full bg-[#0a0a0a] overflow-hidden rounded-xl border border-white/5">
 
 <svg ref={svgRef} className="w-full h-full" />
 
-<div className="radar-overlay"></div>
+{/* zoom controls */}
+
+<div className="absolute right-4 top-1/2 -translate-y-1/2 flex flex-col gap-2">
+
+<button
+onClick={zoomIn}
+className="w-9 h-9 bg-black/60 border border-white/20 rounded flex items-center justify-center text-white hover:bg-black"
+>
++
+</button>
+
+<button
+onClick={zoomOut}
+className="w-9 h-9 bg-black/60 border border-white/20 rounded flex items-center justify-center text-white hover:bg-black"
+>
+-
+</button>
+
+<button
+onClick={fullscreen}
+className="w-9 h-9 bg-black/60 border border-white/20 rounded flex items-center justify-center text-white hover:bg-black"
+>
+⛶
+</button>
+
+</div>
 
 {incidents.length === 0 && (
 
@@ -147,37 +206,6 @@ Synchronizing Global Intelligence...
 </div>
 
 )}
-
-<style>{`
-
-.radar-overlay{
-position:absolute;
-top:0;
-left:0;
-width:100%;
-height:100%;
-pointer-events:none;
-background: radial-gradient(circle at center, transparent 60%, rgba(0,255,150,0.05) 100%);
-}
-
-.radar-overlay::after{
-content:"";
-position:absolute;
-width:60%;
-height:60%;
-top:20%;
-left:20%;
-border-radius:50%;
-border:2px solid rgba(0,255,150,0.2);
-animation:radarSweep 6s linear infinite;
-}
-
-@keyframes radarSweep{
-0%{transform:rotate(0deg);}
-100%{transform:rotate(360deg);}
-}
-
-`}</style>
 
 </div>
 
