@@ -4,7 +4,7 @@ import { fetchLatestIncidents } from './services/gemini';
 import Map from './components/Map.tsx';
 import IncidentFeed from './components/IncidentFeed.tsx';
 import StatsPanel from './components/StatsPanel.tsx';
-import { RefreshCw, ShieldAlert, Twitter, X, ExternalLink } from 'lucide-react';
+import { RefreshCw, ShieldAlert, X, ExternalLink } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 export default function App() {
@@ -14,6 +14,8 @@ const [loading, setLoading] = useState(true);
 const [selectedIncident, setSelectedIncident] = useState<Incident | null>(null);
 const [lastUpdated, setLastUpdated] = useState(new Date());
 const [alertIncident, setAlertIncident] = useState<Incident | null>(null);
+
+const [lastTweetTime, setLastTweetTime] = useState<number>(0);
 
 const monitoredSources: MonitoredSource[] = [
 { id: '1', url: 'https://x.com/ALERTX360', handle: '@ALERTX360', label: 'AlertX360' },
@@ -62,7 +64,7 @@ setLastUpdated(new Date());
 
 };
 
-/* Faster refresh */
+/* Gemini / RSS refresh */
 useEffect(() => {
 
 loadData(true);
@@ -72,6 +74,63 @@ const interval = setInterval(() => loadData(false), 30000);
 return () => clearInterval(interval);
 
 }, []);
+
+
+/* ---------- TWITTER MONITOR ---------- */
+
+useEffect(() => {
+
+const checkTwitter = async () => {
+
+try {
+
+const res = await fetch('/api/twitter');
+const data = await res.json();
+
+if (!data.success) return;
+
+const tweet = data.tweets[0];
+if (!tweet) return;
+
+const tweetTime = new Date(tweet.time).getTime();
+
+if (tweetTime > lastTweetTime) {
+
+setLastTweetTime(tweetTime);
+
+const incident: Incident = {
+id: tweet.url,
+title: tweet.text,
+description: tweet.text,
+timestamp: tweet.time,
+location: { name: 'Signal Intelligence', lat: 33, lng: 44 },
+severity: 'high',
+sourceUrl: tweet.url
+};
+
+setAlertIncident(incident);
+
+setTimeout(() => {
+setAlertIncident(null);
+}, 7000);
+
+}
+
+} catch (err) {
+console.error("Twitter monitor error", err);
+}
+
+};
+
+checkTwitter();
+
+const interval = setInterval(checkTwitter, 20000);
+
+return () => clearInterval(interval);
+
+}, [lastTweetTime]);
+
+/* ---------- UI ---------- */
 
 return (
 
@@ -238,65 +297,12 @@ Tweets by ALERTX360
 
 </div>
 
-<AnimatePresence>
-
-{selectedIncident && (
-
-<motion.div
-initial={{ x: '100%' }}
-animate={{ x: 0 }}
-exit={{ x: '100%' }}
-className="absolute top-0 right-0 w-96 h-full bg-[#0d0d0d] border-l border-white/10 p-6"
->
-
-<div className="flex justify-between mb-4">
-
-<h2 className="font-bold">
-{selectedIncident.title}
-</h2>
-
-<button onClick={() => setSelectedIncident(null)}>
-<X size={18}/>
-</button>
-
-</div>
-
-<p className="text-sm text-white/70 mb-4">
-{selectedIncident.description}
-</p>
-
-{selectedIncident.sourceUrl && (
-
-<a
-href={selectedIncident.sourceUrl}
-target="_blank"
-rel="noopener noreferrer"
-className="text-blue-400 text-xs flex items-center gap-1"
->
-
-View Source
-
-<ExternalLink size={12}/>
-
-</a>
-
-)}
-
-</motion.div>
-
-)}
-
-</AnimatePresence>
-
 </section>
 
 </main>
 
-
 <footer className="h-8 bg-[#111] border-t border-white/10 flex items-center px-4 text-[10px] text-white/40">
-
 Last Sync: {lastUpdated.toLocaleTimeString()}
-
 </footer>
 
 </div>
