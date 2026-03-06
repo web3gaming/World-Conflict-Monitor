@@ -107,16 +107,21 @@ return (
 
     <div className="flex items-center gap-6">
 
-      {monitoredSources.map(source => (
-        <div key={source.id} className="flex flex-col text-right">
-          <span className="text-[8px] text-white/40 uppercase">
-            Monitoring
-          </span>
-          <span className="text-[10px] text-blue-400 flex items-center gap-1">
-            <Twitter size={10}/> {source.handle}
+      {/* Intel Grid Status */}
+      <div className="flex flex-col text-right">
+
+        <div className="flex items-center gap-2 justify-end">
+          <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+          <span className="text-[10px] text-green-400 uppercase tracking-widest">
+            INTEL GRID ACTIVE
           </span>
         </div>
-      ))}
+
+        <span className="text-[9px] text-white/40 uppercase">
+          Nodes: {monitoredSources.length} | Sync: 2m
+        </span>
+
+      </div>
 
       <button
         onClick={() => loadData(false)}
@@ -155,7 +160,7 @@ return (
           />
         </div>
 
-        {/* Live X Feed Panel */}
+        {/* Live X Signal Feed */}
         <div className="w-[360px] hidden lg:block">
 
           <div className="h-full bg-[#0d0d0d] border border-white/10 rounded-xl overflow-hidden">
@@ -233,9 +238,7 @@ return (
   </main>
 
   <footer className="h-8 bg-[#111] border-t border-white/10 flex items-center px-4 text-[10px] text-white/40">
-
     Last Sync: {lastUpdated.toLocaleTimeString()}
-
   </footer>
 
 </div>
