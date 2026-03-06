@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { Incident, MonitoredSource } from "./types";
 import { fetchLatestIncidents } from "./services/gemini";
-import Map from "./components/Map.tsx";
-import IncidentFeed from "./components/IncidentFeed.tsx";
-import StatsPanel from "./components/StatsPanel.tsx";
+import Map from "./components/Map";
+import IncidentFeed from "./components/IncidentFeed";
+import StatsPanel from "./components/StatsPanel";
 import { RefreshCw, ShieldAlert, X, ExternalLink } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 
@@ -67,11 +67,14 @@ const tweetId = tweet.url;
 
 if (tweetId === lastTweetId) return;
 
-const cleanText = tweet.text
-.replace(/<!CDATA[/g,"")
-.replace(/]>/g,"")
-.replace(/<[^>]*>/g,"")
-.trim();
+let cleanText = tweet.text || "";
+
+/* SAFE TEXT CLEANING (no regex) */
+cleanText = cleanText.split("<![CDATA[").join("");
+cleanText = cleanText.split("]]>").join("");
+cleanText = cleanText.split("<").join("");
+cleanText = cleanText.split(">").join("");
+cleanText = cleanText.trim();
 
 const incident: Incident = {
 id: tweetId,
@@ -109,108 +112,187 @@ return () => clearInterval(interval);
 
 return (
 
-<div className="flex flex-col h-screen bg-[#050505] text-white font-sans"><AnimatePresence>{alertIncident && (
+<div className="flex flex-col h-screen bg-[#050505] text-white font-sans">
+
+<AnimatePresence>
+{alertIncident && (
 
 <motion.div
 initial={{ y:-120, opacity:0 }}
 animate={{ y:20, opacity:1 }}
 exit={{ y:-120, opacity:0 }}
 className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-red-600 px-6 py-4 rounded-xl flex items-center gap-4 shadow-2xl max-w-xl"
+>
 
-«»
+<div className="flex flex-col">
 
-<div className="flex flex-col"><span className="text-xs uppercase tracking-widest font-bold">
+<span className="text-xs uppercase tracking-widest font-bold">
 SIGNAL DETECTED
-</span><span className="text-sm font-semibold">
+</span>
+
+<span className="text-sm font-semibold">
 {alertIncident.title}
-</span><span className="text-[11px] text-white/80">
+</span>
+
+<span className="text-[11px] text-white/80">
 Location: {alertIncident.location.name}
-</span></div></motion.div>
+</span>
+
+</div>
+
+</motion.div>
 
 )}
+</AnimatePresence>
 
-</AnimatePresence><header className="h-14 border-b border-white/10 flex items-center justify-between px-6 bg-[#0a0a0a]"><div className="flex items-center gap-3"><div className="w-8 h-8 bg-red-600 rounded flex items-center justify-center">
+<header className="h-14 border-b border-white/10 flex items-center justify-between px-6 bg-[#0a0a0a]">
+
+<div className="flex items-center gap-3">
+
+<div className="w-8 h-8 bg-red-600 rounded flex items-center justify-center">
 <ShieldAlert size={18}/>
-</div><div><h1 className="text-sm font-bold uppercase">
+</div>
+
+<div>
+<h1 className="text-sm font-bold uppercase">
 Global Conflict Monitor
-</h1><span className="text-[9px] font-mono text-white/40 uppercase">
+</h1>
+
+<span className="text-[9px] font-mono text-white/40 uppercase">
 Strategic Intelligence Network
-</span></div></div><button
+</span>
+</div>
+
+</div>
+
+<button
 onClick={() => loadData(false)}
 disabled={loading}
 className="flex items-center gap-2 px-3 py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded"
-
-«»
+>
 
 <RefreshCw size={14} className={loading ? "animate-spin" : ""}/>
+<span className="text-[10px] uppercase">Sync</span>
 
-<span className="text-[10px] uppercase">
-Sync
-</span></button></header><main className="flex flex-1 overflow-hidden"><aside className="w-80 hidden md:block"><IncidentFeed
+</button>
+
+</header>
+
+<main className="flex flex-1 overflow-hidden">
+
+<aside className="w-80 hidden md:block">
+
+<IncidentFeed
 incidents={incidents}
 onSelectIncident={setSelectedIncident}
 selectedIncidentId={selectedIncident?.id}
 />
 
-</aside><section className="flex-1 flex flex-col relative"><StatsPanel incidents={incidents}/><div className="flex flex-1 gap-4 p-4"><div className="flex-1"><Map
+</aside>
+
+<section className="flex-1 flex flex-col relative">
+
+<StatsPanel incidents={incidents}/>
+
+<div className="flex flex-1 gap-4 p-4">
+
+<div className="flex-1">
+
+<Map
 incidents={incidents}
 onSelectIncident={setSelectedIncident}
 selectedIncidentId={selectedIncident?.id}
 />
 
-</div><div className="w-[360px] hidden lg:block"><div className="h-full bg-[#0d0d0d] border border-white/10 rounded-xl overflow-hidden"><div className="px-4 py-2 border-b border-white/10 text-xs uppercase tracking-widest text-white/50">
+</div>
+
+<div className="w-[360px] hidden lg:block">
+
+<div className="h-full bg-[#0d0d0d] border border-white/10 rounded-xl overflow-hidden">
+
+<div className="px-4 py-2 border-b border-white/10 text-xs uppercase tracking-widest text-white/50">
 Live Signal Feed
-</div><div className="h-[calc(100%-32px)] overflow-y-auto p-2"><a
+</div>
+
+<div className="h-[calc(100%-32px)] overflow-y-auto p-2">
+
+<a
 className="twitter-timeline"
 data-theme="dark"
 data-height="700"
 data-chrome="nofooter noborders transparent"
 href="https://twitter.com/ALERTX360"
-
-«»
-
+>
 Tweets by ALERTX360
 </a>
 
-</div></div></div></div><AnimatePresence>{selectedIncident && (
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+<AnimatePresence>
+
+{selectedIncident && (
 
 <motion.div
 initial={{ x:"100%" }}
 animate={{ x:0 }}
 exit={{ x:"100%" }}
 className="absolute top-0 right-0 w-96 h-full bg-[#0d0d0d] border-l border-white/10 p-6"
+>
 
-«»
+<div className="flex justify-between mb-4">
 
-<div className="flex justify-between mb-4"><h2 className="font-bold">
+<h2 className="font-bold">
 {selectedIncident.title}
-</h2><button onClick={() => setSelectedIncident(null)}>
+</h2>
+
+<button onClick={() => setSelectedIncident(null)}>
 <X size={18}/>
 </button>
 
-</div><p className="text-sm text-white/70 mb-4">
+</div>
+
+<p className="text-sm text-white/70 mb-4">
 {selectedIncident.description}
-</p>{selectedIncident.sourceUrl && (
+</p>
+
+{selectedIncident.sourceUrl && (
 
 <a
 href={selectedIncident.sourceUrl}
 target="_blank"
 rel="noopener noreferrer"
 className="text-blue-400 text-xs flex items-center gap-1"
-
-«»
+>
 
 View Source
 <ExternalLink size={12}/>
 
-</a>)}
+</a>
+
+)}
 
 </motion.div>
 
 )}
 
-</AnimatePresence></section></main><footer className="h-8 bg-[#111] border-t border-white/10 flex items-center px-4 text-[10px] text-white/40">
+</AnimatePresence>
+
+</section>
+
+</main>
+
+<footer className="h-8 bg-[#111] border-t border-white/10 flex items-center px-4 text-[10px] text-white/40">
 Last Sync: {lastUpdated.toLocaleTimeString()}
-</footer></div>);
+</footer>
+
+</div>
+
+);
 
 }
