@@ -28,16 +28,16 @@ const data = await fetchLatestIncidents(monitoredSources);
 
 if (!isInitial && data.length > 0 && incidents.length > 0) {
 
-  const latestExisting = new Date(incidents[0].timestamp).getTime();
+const latestExisting = new Date(incidents[0].timestamp).getTime();
 
-  const trulyNew = data.filter(
-    item => new Date(item.timestamp).getTime() > latestExisting
-  );
+const trulyNew = data.filter(
+item => new Date(item.timestamp).getTime() > latestExisting
+);
 
-  if (trulyNew.length > 0) {
-    setNewIncidentToast(trulyNew[0]);
-    setTimeout(() => setNewIncidentToast(null), 8000);
-  }
+if (trulyNew.length > 0) {
+setNewIncidentToast(trulyNew[0]);
+setTimeout(() => setNewIncidentToast(null), 8000);
+}
 
 }
 
@@ -45,9 +45,9 @@ setIncidents(data);
 
 if (selectedIncident) {
 
-  const updated = data.find(i => i.id === selectedIncident.id);
+const updated = data.find(i => i.id === selectedIncident.id);
 
-  if (updated) setSelectedIncident(updated);
+if (updated) setSelectedIncident(updated);
 
 }
 
@@ -65,6 +65,25 @@ const interval = setInterval(() => loadData(false), 2 * 60 * 1000);
 return () => clearInterval(interval);
 
 }, []);
+
+
+// FIX: Force Twitter widgets to render in React
+useEffect(() => {
+
+const timer = setTimeout(() => {
+
+if ((window as any).twttr && (window as any).twttr.widgets) {
+
+(window as any).twttr.widgets.load();
+
+}
+
+}, 1500);
+
+return () => clearTimeout(timer);
+
+}, []);
+
 
 return (
 
