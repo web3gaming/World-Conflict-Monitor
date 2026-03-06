@@ -49,8 +49,6 @@ return () => clearInterval(interval);
 
 }, []);
 
-/* TWITTER MONITOR */
-
 useEffect(() => {
 
 const checkTwitter = async () => {
@@ -70,8 +68,8 @@ const tweetId = tweet.url;
 if (tweetId === lastTweetId) return;
 
 const cleanText = tweet.text
-.replace(/<!\[CDATA\[/g,"")
-.replace(/\]\]>/g,"")
+.replace(/<!CDATA[/g,"")
+.replace(/]>/g,"")
 .replace(/<[^>]*>/g,"")
 .trim();
 
@@ -89,7 +87,7 @@ setAlertIncident(incident);
 
 setTimeout(() => {
 setAlertIncident(null);
-}, 7000);
+},7000);
 
 setLastTweetId(tweetId);
 
@@ -103,11 +101,11 @@ console.error("Twitter monitor error:", error);
 
 checkTwitter();
 
-const interval = setInterval(checkTwitter, 15000);
+const interval = setInterval(checkTwitter,15000);
 
 return () => clearInterval(interval);
 
-}, [lastTweetId]);
+},[lastTweetId]);
 
 return (
 
@@ -203,15 +201,16 @@ className="text-blue-400 text-xs flex items-center gap-1"
 «»
 
 View Source
+<ExternalLink size={12}/>
 
-<ExternalLink size={12}/></a>)}
+</a>)}
 
 </motion.div>
 
 )}
 
-</AnimatePresence></section></main><footer className="h-8 bg-[#111] border-t border-white/10 flex items-center px-4 text-[10px] text-white/40">Last Sync: {lastUpdated.toLocaleTimeString()}
-
+</AnimatePresence></section></main><footer className="h-8 bg-[#111] border-t border-white/10 flex items-center px-4 text-[10px] text-white/40">
+Last Sync: {lastUpdated.toLocaleTimeString()}
 </footer></div>);
 
 }
