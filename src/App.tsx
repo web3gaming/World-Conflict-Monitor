@@ -21,20 +21,9 @@ const [selectedIncident, setSelectedIncident] = useState<Incident | null>(null);
 const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
 const [newIncidentToast, setNewIncidentToast] = useState<Incident | null>(null);
 
-/* MONITORED TWITTER SOURCES */
 const monitoredSources: MonitoredSource[] = [
-{
-id: '1',
-url: 'https://x.com/MonitorX99800',
-handle: '@MonitorX99800',
-label: 'MonitorX'
-},
-{
-id: '2',
-url: 'https://x.com/ALERTX360',
-handle: '@ALERTX360',
-label: 'AlertX'
-}
+{ id: '1', url: 'https://x.com/MonitorX99800', handle: '@MonitorX99800', label: 'MonitorX' },
+{ id: '2', url: 'https://x.com/ALERTX360', handle: '@ALERTX360', label: 'AlertX360' }
 ];
 
 const loadData = async (isInitial = false) => {
@@ -55,9 +44,21 @@ if (!isInitial && data.length > 0 && incidents.length > 0) {
     setNewIncidentToast(trulyNew[0]);
     setTimeout(() => setNewIncidentToast(null), 8000);
   }
+
 }
 
 setIncidents(data);
+
+if (selectedIncident) {
+
+  const updatedIncident = data.find(i => i.id === selectedIncident.id);
+
+  if (updatedIncident) {
+    setSelectedIncident(updatedIncident);
+  }
+
+}
+
 setLoading(false);
 setLastUpdated(new Date());
 
@@ -66,8 +67,6 @@ setLastUpdated(new Date());
 useEffect(() => {
 
 loadData(true);
-
-/* Refresh every 2 minutes */
 
 const interval = setInterval(
   () => loadData(false),
@@ -81,8 +80,6 @@ return () => clearInterval(interval);
 return (
 
 <div className="flex flex-col h-screen bg-[#050505] text-white font-sans overflow-hidden selection:bg-red-500/30">
-
-  {/* ALERT POPUP */}
 
   <AnimatePresence>
 
@@ -114,9 +111,7 @@ return (
         }
 
         <span className="text-xs font-bold uppercase tracking-widest">
-
           Intelligence Alert: {newIncidentToast.title}
-
         </span>
 
       </motion.div>
@@ -124,8 +119,6 @@ return (
     )}
 
   </AnimatePresence>
-
-  {/* HEADER */}
 
   <header className="h-14 border-b border-white/10 flex items-center justify-between px-6 bg-[#0a0a0a] z-50">
 
@@ -163,55 +156,27 @@ return (
 
     </div>
 
-    <div className="flex items-center gap-4">
+    <button
 
-      <div className="hidden lg:flex items-center gap-6 mr-4">
+      onClick={() => loadData(false)}
+      disabled={loading}
 
-        {monitoredSources.map(source => (
+      className="group flex items-center gap-2 px-3 py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded transition-all disabled:opacity-50"
 
-          <div key={source.id} className="flex flex-col items-start">
+    >
 
-            <span className="text-[8px] font-mono text-white/30 uppercase tracking-widest">
-              Monitoring
-            </span>
+      <RefreshCw
+        size={14}
+        className={loading ? "animate-spin" : "group-hover:rotate-180 transition-transform duration-500"}
+      />
 
-            <span className="text-[10px] font-mono text-blue-400 uppercase flex items-center gap-1">
+      <span className="text-[10px] font-mono uppercase tracking-widest">
+        Sync
+      </span>
 
-              <Twitter size={8} /> {source.handle}
-
-            </span>
-
-          </div>
-
-        ))}
-
-      </div>
-
-      <button
-
-        onClick={() => loadData(false)}
-        disabled={loading}
-
-        className="group flex items-center gap-2 px-3 py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded transition-all disabled:opacity-50"
-
-      >
-
-        <RefreshCw
-          size={14}
-          className={loading ? "animate-spin" : "group-hover:rotate-180 transition-transform duration-500"}
-        />
-
-        <span className="text-[10px] font-mono uppercase tracking-widest">
-          Sync
-        </span>
-
-      </button>
-
-    </div>
+    </button>
 
   </header>
-
-  {/* MAIN */}
 
   <main className="flex-1 flex overflow-hidden">
 
@@ -239,22 +204,79 @@ return (
 
       </div>
 
+      <AnimatePresence>
+
+        {selectedIncident && (
+
+          <motion.div
+
+            initial={{ x: '100%' }}
+            animate={{ x: 0 }}
+            exit={{ x: '100%' }}
+
+            transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+
+            className="absolute top-0 right-0 w-96 h-full bg-[#0d0d0d] border-l border-white/10 shadow-2xl z-40 p-6 overflow-y-auto"
+
+          >
+
+            <div className="flex justify-between items-start mb-6">
+
+              <div>
+
+                <span className="text-[10px] font-mono text-white/40 uppercase tracking-widest">
+                  Intelligence Report
+                </span>
+
+                <h2 className="text-xl font-bold leading-tight">
+                  {selectedIncident.title}
+                </h2>
+
+              </div>
+
+              <button
+                onClick={() => setSelectedIncident(null)}
+                className="p-1 hover:bg-white/10 rounded-full"
+              >
+                <X size={20} />
+              </button>
+
+            </div>
+
+            <p className="text-sm text-white/70 mb-4">
+              {selectedIncident.description}
+            </p>
+
+            {selectedIncident.sourceUrl && (
+
+              <a
+                href={selectedIncident.sourceUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-400 text-xs flex items-center gap-1"
+              >
+                View Source <ExternalLink size={12} />
+              </a>
+
+            )}
+
+          </motion.div>
+
+        )}
+
+      </AnimatePresence>
+
     </section>
 
   </main>
 
-  {/* FOOTER */}
-
   <footer className="h-8 bg-[#111] border-t border-white/10 flex items-center px-4 overflow-hidden">
 
     <div className="flex-shrink-0 flex items-center gap-2 mr-4 border-r border-white/10 pr-4">
-
       <div className="w-2 h-2 rounded-full bg-red-600 animate-pulse" />
-
       <span className="text-[10px] font-mono uppercase tracking-widest text-red-500 font-bold">
         Live Ticker
       </span>
-
     </div>
 
     <div className="flex-1 overflow-hidden">
@@ -264,13 +286,10 @@ return (
         {incidents.map((incident, i) => (
 
           <span key={i} className="text-[10px] font-mono text-white/50 uppercase tracking-widest">
-
             <span className="text-white/80 font-bold mr-2">
               [{incident.location.name}]
             </span>
-
             {incident.title}
-
           </span>
 
         ))}
@@ -282,9 +301,7 @@ return (
     <div className="flex-shrink-0 ml-4 border-l border-white/10 pl-4">
 
       <span className="text-[10px] font-mono text-white/30 uppercase tracking-widest">
-
         Last Sync: {lastUpdated.toLocaleTimeString()}
-
       </span>
 
     </div>
@@ -294,4 +311,5 @@ return (
 </div>
 
 );
+
 }
