@@ -1,0 +1,5 @@
+{
+  "name": "Global Conflict Monitor",
+  "description": "Real-time tracking of global military incidents, war actions, and geopolitical movements using AI-powered search grounding.",
+  "requestFramePermissions": ["geolocation"]
+}
