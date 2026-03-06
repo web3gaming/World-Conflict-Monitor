@@ -22,7 +22,6 @@ fetch("https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json")
 .then(data => setWorldData(data))
 }, [])
 
-
 /* CREATE MAP */
 
 useEffect(() => {
@@ -61,7 +60,7 @@ g.selectAll("path")
 .attr("stroke", "#333")
 .attr("stroke-width", 0.5)
 
-/* DRAG / PAN ONLY */
+/* DRAG / PAN */
 
 const drag = d3.drag()
 .on("drag", (event) => {
@@ -91,7 +90,6 @@ svg.call(drag as any)
 }, [worldData])
 
 
-
 /* INCIDENT UPDATE */
 
 useEffect(() => {
@@ -118,7 +116,7 @@ onSelectIncident(d)
 enter.append("circle")
 .attr("r",6)
 .attr("fill","#f97316")
-.attr("opacity",0.85)
+.attr("opacity",0.9)
 
 enter.append("circle")
 .attr("r",4)
@@ -145,6 +143,82 @@ g.selectAll(".incident")
 const coords = projection([d.location.lng,d.location.lat])
 return coords ? `translate(${coords[0]},${coords[1]})` : ""
 })
+
+/* MAP FLASH WHEN NEW INCIDENT */
+
+const latest = incidents[0]
+
+if(latest){
+
+const coords = projection([latest.location.lng, latest.location.lat])
+
+if(coords){
+
+const flash = g.append("circle")
+.attr("cx",coords[0])
+.attr("cy",coords[1])
+.attr("r",10)
+.attr("fill","none")
+.attr("stroke","#ff3b3b")
+.attr("stroke-width",2)
+
+flash.transition()
+.duration(900)
+.attr("r",60)
+.style("opacity",0)
+.remove()
+
+}
+
+}
+
+},[incidents])
+
+
+/* DRONE / MISSILE TRAJECTORY */
+
+useEffect(()=>{
+
+if(!mapLayer.current || !projectionRef.current) return
+if(incidents.length < 2) return
+
+const g = mapLayer.current
+const projection = projectionRef.current
+
+const from = incidents[1]
+const to = incidents[0]
+
+const start = projection([from.location.lng,from.location.lat])
+const end = projection([to.location.lng,to.location.lat])
+
+if(!start || !end) return
+
+const line = g.append("line")
+.attr("x1",start[0])
+.attr("y1",start[1])
+.attr("x2",start[0])
+.attr("y2",start[1])
+.attr("stroke","#ff3b3b")
+.attr("stroke-width",2)
+.attr("stroke-dasharray","6 4")
+
+line.transition()
+.duration(1200)
+.attr("x2",end[0])
+.attr("y2",end[1])
+.remove()
+
+const impact = g.append("circle")
+.attr("cx",end[0])
+.attr("cy",end[1])
+.attr("r",6)
+.attr("fill","#ff3b3b")
+
+impact.transition()
+.duration(800)
+.attr("r",30)
+.style("opacity",0)
+.remove()
 
 },[incidents])
 
