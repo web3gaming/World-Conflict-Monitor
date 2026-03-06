@@ -4,16 +4,14 @@ import * as topojson from 'topojson-client';
 import { Incident } from '../types';
 
 interface MapProps {
-incidents: Incident[];
-onSelectIncident: (incident: Incident) => void;
-selectedIncidentId?: string;
+  incidents: Incident[];
+  onSelectIncident: (incident: Incident) => void;
+  selectedIncidentId?: string;
 }
 
 const Map: React.FC<MapProps> = ({ incidents, onSelectIncident }) => {
 
 const svgRef = useRef<SVGSVGElement>(null);
-const containerRef = useRef<HTMLDivElement>(null);
-const zoomRef = useRef<any>(null);
 const [worldData, setWorldData] = useState<any>(null);
 
 useEffect(() => {
@@ -30,15 +28,21 @@ const svg = d3.select(svgRef.current);
 const width = svgRef.current.clientWidth;
 const height = svgRef.current.clientHeight;
 
-svg.selectAll('*').remove();
+/* Prevent map from redrawing and disappearing */
+if (svg.selectAll('g.map-layer').size() > 0) {
+  updateIncidents();
+  return;
+}
 
+/* Projection */
 const projection = d3.geoMercator()
   .scale(width / 6.5)
   .translate([width / 2, height / 1.5]);
 
 const path = d3.geoPath().projection(projection);
 
-const g = svg.append('g');
+/* Map Layer */
+const g = svg.append('g').attr('class', 'map-layer');
 
 const countries = topojson.feature(worldData, worldData.objects.countries) as any;
 
@@ -51,126 +55,148 @@ g.selectAll('path')
   .attr('stroke', '#333')
   .attr('stroke-width', 0.5);
 
-const points = g.selectAll('.incident-point')
-  .data(incidents)
-  .enter()
-  .append('g')
-  .attr('class', 'incident-point')
-  .attr('transform', d => {
-    const coords = projection([d.location.lng, d.location.lat]);
-    return coords ? `translate(${coords[0]}, ${coords[1]})` : '';
-  })
-  .style('cursor', 'pointer')
-  .on('click', function (event, d) {
-    event.stopPropagation();
-    onSelectIncident(d);
-  });
-
-points.append('circle')
-  .attr('r', d => d.severity === 'critical' ? 8 : 4)
-  .attr('fill', d => {
-    if (d.severity === 'critical') return '#ef4444';
-    if (d.severity === 'high') return '#f97316';
-    return '#eab308';
-  })
-  .attr('opacity', 0.8);
-
+/* Zoom */
 const zoom = d3.zoom()
   .scaleExtent([1, 8])
   .on('zoom', (event) => {
     g.attr('transform', event.transform);
   });
 
-zoomRef.current = zoom;
-
 svg.call(zoom as any);
+
+/* Incident updater */
+function updateIncidents() {
+
+  const points = g.selectAll('.incident-point')
+    .data(incidents, (d: any) => d.id);
+
+  points.exit().remove();
+
+  const newPoints = points.enter()
+    .append('g')
+    .attr('class', 'incident-point')
+    .style('cursor', 'pointer')
+    .on('click', function (event, d) {
+      event.stopPropagation();
+      onSelectIncident(d);
+    });
+
+  newPoints.append('circle')
+    .attr('r', d => d.severity === 'critical' ? 8 : 4)
+    .attr('fill', d => {
+      if (d.severity === 'critical') return '#ef4444';
+      if (d.severity === 'high') return '#f97316';
+      return '#eab308';
+    })
+    .attr('opacity', 0.8);
+
+  newPoints.filter(d => d.severity === 'critical' || d.severity === 'high')
+    .append('circle')
+    .attr('r', 4)
+    .attr('fill', 'none')
+    .attr('stroke', d => d.severity === 'critical' ? '#ef4444' : '#f97316')
+    .attr('stroke-width', 1)
+    .append('animate')
+    .attr('attributeName', 'r')
+    .attr('from', '4')
+    .attr('to', '20')
+    .attr('dur', '1.5s')
+    .attr('repeatCount', 'indefinite');
+
+  newPoints.filter(d => d.severity === 'critical' || d.severity === 'high')
+    .select('circle:last-child')
+    .append('animate')
+    .attr('attributeName', 'opacity')
+    .attr('from', '0.8')
+    .attr('to', '0')
+    .attr('dur', '1.5s')
+    .attr('repeatCount', 'indefinite');
+
+  g.selectAll('.incident-point')
+    .attr('transform', (d: any) => {
+      const coords = projection([d.location.lng, d.location.lat]);
+      return coords ? `translate(${coords[0]}, ${coords[1]})` : '';
+    });
+
+}
+
+updateIncidents();
 
 }, [worldData, incidents]);
 
-const zoomIn = () => {
-if (!svgRef.current || !zoomRef.current) return;
-d3.select(svgRef.current).transition().call(zoomRef.current.scaleBy, 1.3);
-};
-
-const zoomOut = () => {
-if (!svgRef.current || !zoomRef.current) return;
-d3.select(svgRef.current).transition().call(zoomRef.current.scaleBy, 0.7);
-};
-
-const toggleFullscreen = () => {
-if (!containerRef.current) return;
-if (!document.fullscreenElement) {
-containerRef.current.requestFullscreen();
-} else {
-document.exitFullscreen();
-}
-};
-
 return (
 
-<div ref={containerRef} className="relative w-full h-full bg-[#0a0a0a] overflow-hidden rounded-xl border border-white/5">
+<div className="relative w-full h-full bg-[#0a0a0a] overflow-hidden rounded-xl border border-white/5">
 
   <svg ref={svgRef} className="w-full h-full" />
 
-  {/* Radar Sweep */}
+  {/* Radar Overlay */}
   <div className="radar-overlay"></div>
 
-  {/* Controls */}
-  <div className="absolute right-4 top-4 flex flex-col gap-2 z-20">
+  {incidents.length === 0 && (
 
-    <button
-      onClick={zoomIn}
-      className="w-9 h-9 bg-black/60 border border-white/20 rounded flex items-center justify-center hover:bg-black/80"
-    >
-      +
-    </button>
+    <div className="absolute inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm">
 
-    <button
-      onClick={zoomOut}
-      className="w-9 h-9 bg-black/60 border border-white/20 rounded flex items-center justify-center hover:bg-black/80"
-    >
-      −
-    </button>
+      <div className="flex flex-col items-center gap-4">
 
-    <button
-      onClick={toggleFullscreen}
-      className="w-9 h-9 bg-black/60 border border-white/20 rounded flex items-center justify-center hover:bg-black/80"
-    >
-      ⛶
-    </button>
+        <div className="w-12 h-12 border-4 border-red-600 border-t-transparent rounded-full animate-spin" />
+
+        <div className="text-[10px] font-mono uppercase tracking-widest text-white/40">
+          Synchronizing Global Intelligence...
+        </div>
+
+      </div>
+
+    </div>
+
+  )}
+
+  <div className="absolute bottom-4 left-4 flex flex-col gap-2 pointer-events-none">
+
+    <div className="flex items-center gap-2 text-[10px] uppercase tracking-widest text-white/50">
+      <div className="w-2 h-2 rounded-full bg-red-500" /> Critical Incident
+    </div>
+
+    <div className="flex items-center gap-2 text-[10px] uppercase tracking-widest text-white/50">
+      <div className="w-2 h-2 rounded-full bg-orange-500" /> High Alert
+    </div>
+
+    <div className="flex items-center gap-2 text-[10px] uppercase tracking-widest text-white/50">
+      <div className="w-2 h-2 rounded-full bg-yellow-500" /> Active Movement
+    </div>
 
   </div>
 
-  <style>{`
+<style>{`
 
-    .radar-overlay{
-      position:absolute;
-      top:0;
-      left:0;
-      width:100%;
-      height:100%;
-      pointer-events:none;
-      background: radial-gradient(circle at center, transparent 60%, rgba(0,255,150,0.05) 100%);
-    }
+.radar-overlay{
+position:absolute;
+top:0;
+left:0;
+width:100%;
+height:100%;
+pointer-events:none;
+background: radial-gradient(circle at center, transparent 60%, rgba(0,255,150,0.05) 100%);
+}
 
-    .radar-overlay::after{
-      content:"";
-      position:absolute;
-      width:60%;
-      height:60%;
-      top:20%;
-      left:20%;
-      border-radius:50%;
-      border:2px solid rgba(0,255,150,0.25);
-      animation:radarSweep 5s linear infinite;
-    }
+.radar-overlay::after{
+content:"";
+position:absolute;
+width:60%;
+height:60%;
+top:20%;
+left:20%;
+border-radius:50%;
+border:2px solid rgba(0,255,150,0.2);
+animation:radarSweep 6s linear infinite;
+}
 
-    @keyframes radarSweep{
-      0%{transform:rotate(0deg);}
-      100%{transform:rotate(360deg);}
-    }
+@keyframes radarSweep{
+0%{transform:rotate(0deg);}
+100%{transform:rotate(360deg);}
+}
 
-  `}</style>
+`}</style>
 
 </div>
 
