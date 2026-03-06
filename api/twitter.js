@@ -1,46 +1,69 @@
 export default async function handler(req, res) {
 
-  const sources = [
-    "https://rsshub.rssforever.com/twitter/user/MonitorX99800",
-    "https://rsshub.rssforever.com/twitter/user/ALERTX360"
+  const accounts = ["MonitorX99800", "ALERTX360"];
+
+  const instances = [
+    "https://nitter.poast.org",
+    "https://nitter.net",
+    "https://nitter.privacydev.net"
   ];
 
   try {
 
-    const results = await Promise.all(
-      sources.map(async (url) => {
+    for (const instance of instances) {
 
-        const r = await fetch(url);
-        const text = await r.text();
+      try {
 
-        const items = [...text.matchAll(/<item>([\s\S]*?)<\/item>/g)].slice(0,3);
+        const tweets = [];
 
-        return items.map(i => {
+        for (const user of accounts) {
 
-          const block = i[1];
+          const url = `${instance}/${user}/rss`;
 
-          const title = block.match(/<title>(.*?)<\/title>/)?.[1] || "";
-          const link = block.match(/<link>(.*?)<\/link>/)?.[1] || "";
-          const pubDate = block.match(/<pubDate>(.*?)<\/pubDate>/)?.[1] || "";
+          const r = await fetch(url, { timeout: 5000 });
 
-          return {
-            title,
-            link,
-            date: pubDate
-          };
+          if (!r.ok) continue;
 
-        });
+          const text = await r.text();
 
-      })
-    );
+          const items = [...text.matchAll(/<item>([\s\S]*?)<\/item>/g)].slice(0,3);
 
-    const tweets = results.flat().sort(
-      (a,b) => new Date(b.date) - new Date(a.date)
-    );
+          for (const i of items) {
 
-    res.status(200).json({
+            const block = i[1];
+
+            const title = block.match(/<title>(.*?)<\/title>/)?.[1] || "";
+            const link = block.match(/<link>(.*?)<\/link>/)?.[1] || "";
+            const pubDate = block.match(/<pubDate>(.*?)<\/pubDate>/)?.[1] || "";
+
+            tweets.push({
+              title,
+              link,
+              date: pubDate
+            });
+
+          }
+
+        }
+
+        if (tweets.length > 0) {
+
+          tweets.sort((a,b)=> new Date(b.date) - new Date(a.date));
+
+          return res.status(200).json({
+            status: "ok",
+            tweets: tweets.slice(0,10)
+          });
+
+        }
+
+      } catch {}
+
+    }
+
+    return res.status(200).json({
       status: "ok",
-      tweets: tweets.slice(0,10)
+      tweets: []
     });
 
   } catch (err) {
