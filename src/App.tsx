@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from "react";
 import { Incident, MonitoredSource } from "./types";
 import { fetchLatestIncidents } from "./services/gemini";
-import Map from "./components/Map";
-import IncidentFeed from "./components/IncidentFeed";
-import StatsPanel from "./components/StatsPanel";
+import Map from "./components/Map.tsx";
+import IncidentFeed from "./components/IncidentFeed.tsx";
+import StatsPanel from "./components/StatsPanel.tsx";
+import AlertPopup from "./components/AlertPopup.tsx";
 import { RefreshCw, ShieldAlert, X, ExternalLink } from "lucide-react";
-import { motion, AnimatePresence } from "motion/react";
+import { AnimatePresence } from "motion/react";
 
 export default function App() {
 
@@ -14,11 +15,7 @@ const [loading, setLoading] = useState(true);
 const [selectedIncident, setSelectedIncident] = useState<Incident | null>(null);
 const [lastUpdated, setLastUpdated] = useState(new Date());
 const [alertIncident, setAlertIncident] = useState<Incident | null>(null);
-
-/* persist last tweet so refresh doesn't trigger popup again */
-const [lastTweetId, setLastTweetId] = useState<string | null>(
-typeof window !== "undefined" ? localStorage.getItem("lastTweetId") : null
-);
+const [lastTweetId, setLastTweetId] = useState<string | null>(null);
 
 const monitoredSources: MonitoredSource[] = [
 { id: "1", url: "https://x.com/ALERTX360", handle: "@ALERTX360", label: "AlertX360" },
@@ -53,7 +50,9 @@ return () => clearInterval(interval);
 
 }, []);
 
-/* TWITTER RSS MONITOR */
+/* ========================= */
+/* TWITTER ALERT MONITOR */
+/* ========================= */
 
 useEffect(() => {
 
@@ -66,28 +65,27 @@ const data = await res.json();
 
 if (!data.success) return;
 
-if (!data.tweets || data.tweets.length === 0) return;
+const tweet = data.tweets?.[0];
+if (!tweet) return;
 
-/* ensure newest tweet */
-const tweetsSorted = data.tweets.sort(
-(a:any,b:any)=> new Date(b.time).getTime() - new Date(a.time).getTime()
-);
-
-const tweet = tweetsSorted[0];
 const tweetId = tweet.url;
+
+/* prevent duplicate popup */
 
 if (tweetId === lastTweetId) return;
 
-/* clean rss text */
-let cleanText = tweet.text || "";
+/* CLEAN RSS TEXT */
 
-cleanText = cleanText.split("<![CDATA[").join("");
-cleanText = cleanText.split("]]>").join("");
-cleanText = cleanText.split("<").join("");
-cleanText = cleanText.split(">").join("");
-cleanText = cleanText.trim();
+const cleanText = tweet.text
+.replace(/<!\[CDATA\[/g,"")
+.replace(/\]\]>/g,"")
+.replace(/\[[^\]]*\]/g,"")
+.replace(/[^\x00-\x7F]/g,"")
+.replace(/https?:\/\/\S+/g,"")
+.trim();
 
 const incident: Incident = {
+
 id: tweetId,
 title: cleanText,
 description: cleanText,
@@ -95,18 +93,18 @@ timestamp: tweet.time,
 location: { name: "Signal Intelligence", lat: 33, lng: 44 },
 severity: "high",
 sourceUrl: tweet.url
+
 };
+
+/* trigger popup */
 
 setAlertIncident(incident);
 
-/* hide popup */
 setTimeout(() => {
 setAlertIncident(null);
-},7000);
+}, 8000);
 
-/* store tweet id */
 setLastTweetId(tweetId);
-localStorage.setItem("lastTweetId", tweetId);
 
 } catch (error) {
 
@@ -118,7 +116,7 @@ console.error("Twitter monitor error:", error);
 
 checkTwitter();
 
-const interval = setInterval(checkTwitter,15000);
+const interval = setInterval(checkTwitter, 10000);
 
 return () => clearInterval(interval);
 
@@ -132,32 +130,7 @@ return (
 
 <AnimatePresence>
 {alertIncident && (
-
-<motion.div
-initial={{ y:-120, opacity:0 }}
-animate={{ y:20, opacity:1 }}
-exit={{ y:-120, opacity:0 }}
-className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-red-600 px-6 py-4 rounded-xl flex items-center gap-4 shadow-2xl max-w-xl"
->
-
-<div className="flex flex-col">
-
-<span className="text-xs uppercase tracking-widest font-bold">
-SIGNAL DETECTED
-</span>
-
-<span className="text-sm font-semibold">
-{alertIncident.title}
-</span>
-
-<span className="text-[11px] text-white/80">
-Location: {alertIncident.location.name}
-</span>
-
-</div>
-
-</motion.div>
-
+<AlertPopup incident={alertIncident}/>
 )}
 </AnimatePresence>
 
@@ -172,6 +145,7 @@ Location: {alertIncident.location.name}
 </div>
 
 <div>
+
 <h1 className="text-sm font-bold uppercase">
 Global Conflict Monitor
 </h1>
@@ -179,6 +153,7 @@ Global Conflict Monitor
 <span className="text-[9px] font-mono text-white/40 uppercase">
 Strategic Intelligence Network
 </span>
+
 </div>
 
 </div>
@@ -190,7 +165,10 @@ className="flex items-center gap-2 px-3 py-1.5 bg-white/5 hover:bg-white/10 bord
 >
 
 <RefreshCw size={14} className={loading ? "animate-spin" : ""}/>
-<span className="text-[10px] uppercase">Sync</span>
+
+<span className="text-[10px] uppercase">
+Sync
+</span>
 
 </button>
 
@@ -226,7 +204,7 @@ selectedIncidentId={selectedIncident?.id}
 
 </div>
 
-{/* LIVE TWITTER FEED */}
+{/* LIVE SIGNAL FEED */}
 
 <div className="w-[360px] hidden lg:block">
 
@@ -256,18 +234,13 @@ Tweets by ALERTX360
 
 </div>
 
-{/* INCIDENT DETAILS */}
+{/* INCIDENT PANEL */}
 
 <AnimatePresence>
 
 {selectedIncident && (
 
-<motion.div
-initial={{ x:"100%" }}
-animate={{ x:0 }}
-exit={{ x:"100%" }}
-className="absolute top-0 right-0 w-96 h-full bg-[#0d0d0d] border-l border-white/10 p-6"
->
+<div className="absolute top-0 right-0 w-96 h-full bg-[#0d0d0d] border-l border-white/10 p-6">
 
 <div className="flex justify-between mb-4">
 
@@ -295,13 +268,14 @@ className="text-blue-400 text-xs flex items-center gap-1"
 >
 
 View Source
+
 <ExternalLink size={12}/>
 
 </a>
 
 )}
 
-</motion.div>
+</div>
 
 )}
 
@@ -310,8 +284,6 @@ View Source
 </section>
 
 </main>
-
-{/* FOOTER */}
 
 <footer className="h-8 bg-[#111] border-t border-white/10 flex items-center px-4 text-[10px] text-white/40">
 Last Sync: {lastUpdated.toLocaleTimeString()}
