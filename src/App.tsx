@@ -104,7 +104,7 @@ className="flex items-center gap-2 px-3 py-1.5 bg-white/5 hover:bg-white/10 bord
 
 «»
 
-<RefreshCw size={14} className={loading ? "animate-spin" : ""}/>
+<RefreshCw size={14} className={loading ? "animate-spin" : ""} />
 <span className="text-[10px] uppercase">Sync</span>
 
 </button></div></header><main className="flex flex-1 overflow-hidden"><aside className="w-80 hidden md:block">
@@ -125,8 +125,10 @@ Live Signal Feed
 className="twitter-timeline"
 data-theme="dark"
 data-height="700"
-data-chrome="nofooter noborders transparent"
-href="https://x.com/ALERTX360">
+href="https://x.com/ALERTX360"
+
+«»
+
 Tweets by ALERTX360
 </a>
 
