@@ -1,21 +1,18 @@
 export default async function handler(req, res) {
 
-  try {
+  const feeds = [
+    "https://liveuamap.com/en/rss",
+    "https://www.aljazeera.com/xml/rss/all.xml"
+  ];
 
-    const feeds = [
-      "https://nitter.net/MonitorX99800/rss",
-      "https://liveuamap.com/en/rss",
-      "https://www.aljazeera.com/xml/rss/all.xml"
-    ];
+  const events = [];
 
-    const events = [];
+  for (const url of feeds) {
 
-    for (const url of feeds) {
+    try {
 
       const r = await fetch(url, {
-        headers: {
-          "User-Agent": "Mozilla/5.0"
-        }
+        headers: { "User-Agent": "Mozilla/5.0" }
       });
 
       const text = await r.text();
@@ -29,31 +26,23 @@ export default async function handler(req, res) {
         const date = item.split("<pubDate>")[1]?.split("</pubDate>")[0];
 
         if(title){
-
-          events.push({
-            title,
-            link,
-            date
-          });
-
+          events.push({ title, link, date });
         }
 
       }
 
+    } catch (err) {
+
+      console.log("Feed failed:", url);
+
     }
 
-    res.status(200).json({
-      status: "live",
-      timestamp: Date.now(),
-      events
-    });
-
-  } catch (error) {
-
-    res.status(500).json({
-      error: error.message
-    });
-
   }
+
+  res.status(200).json({
+    status: "live",
+    timestamp: Date.now(),
+    events
+  });
 
 }
