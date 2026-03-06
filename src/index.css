@@ -5,3 +5,58 @@
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
 }
+
+/* ============================= */
+/* Radar Alert Flash Effect */
+/* ============================= */
+
+.radar-flash {
+  animation: radarFlash 1.2s ease-out;
+}
+
+@keyframes radarFlash {
+
+  0% {
+    box-shadow: 0 0 0 rgba(255,0,0,0);
+  }
+
+  40% {
+    box-shadow: 0 0 120px rgba(255,0,0,0.85);
+  }
+
+  70% {
+    box-shadow: 0 0 80px rgba(255,0,0,0.6);
+  }
+
+  100% {
+    box-shadow: 0 0 0 rgba(255,0,0,0);
+  }
+
+}
+
+/* ============================= */
+/* Military Alert Pulse */
+/* ============================= */
+
+.alert-pulse {
+  animation: alertPulse 1.4s infinite;
+}
+
+@keyframes alertPulse {
+
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+
+  50% {
+    transform: scale(1.05);
+    opacity: 0.85;
+  }
+
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+
+}
