@@ -66,35 +66,6 @@ return () => clearInterval(interval);
 
 }, []);
 
-useEffect(() => {
-
-const scriptId = 'twitter-widget-script';
-
-if (!document.getElementById(scriptId)) {
-
-const script = document.createElement('script');
-script.id = scriptId;
-script.src = "https://platform.twitter.com/widgets.js";
-script.async = true;
-
-script.onload = () => {
-if ((window as any).twttr) {
-(window as any).twttr.widgets.load();
-}
-};
-
-document.body.appendChild(script);
-
-} else {
-
-if ((window as any).twttr) {
-(window as any).twttr.widgets.load();
-}
-
-}
-
-}, []);
-
 return (
 
 <div className="flex flex-col h-screen bg-[#050505] text-white font-sans"><AnimatePresence>
@@ -154,7 +125,7 @@ Live Signal Feed
 className="twitter-timeline"
 data-theme="dark"
 data-height="700"
-data-chrome="noheader nofooter noborders transparent"
+data-chrome="nofooter noborders transparent"
 href="https://x.com/ALERTX360">
 Tweets by ALERTX360
 </a>
@@ -194,8 +165,8 @@ View Source <ExternalLink size={12}/>
 
 )}
 
-</AnimatePresence></section></main><footer className="h-8 bg-[#111] border-t border-white/10 flex items-center px-4 text-[10px] text-white/40">Last Sync: {lastUpdated.toLocaleTimeString()}
-
+</AnimatePresence></section></main><footer className="h-8 bg-[#111] border-t border-white/10 flex items-center px-4 text-[10px] text-white/40">
+Last Sync: {lastUpdated.toLocaleTimeString()}
 </footer></div>);
 
 }
