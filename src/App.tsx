@@ -70,34 +70,35 @@ return (
 
 <div className="flex flex-col h-screen bg-[#050505] text-white font-sans">
 
-  <AnimatePresence>
-    {newIncidentToast && (
-      <motion.div
-        initial={{ y: -100, opacity: 0 }}
-        animate={{ y: 20, opacity: 1 }}
-        exit={{ y: -100, opacity: 0 }}
-        className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-red-600 px-6 py-3 rounded-full flex items-center gap-3 shadow-xl"
-      >
-        <Twitter size={16} />
-        <span className="text-xs uppercase tracking-widest font-bold">
-          Intelligence Alert: {newIncidentToast.title}
-        </span>
-      </motion.div>
-    )}
-  </AnimatePresence>
+<AnimatePresence>
+{newIncidentToast && (
+<motion.div
+initial={{ y: -100, opacity: 0 }}
+animate={{ y: 20, opacity: 1 }}
+exit={{ y: -100, opacity: 0 }}
+className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-red-600 px-6 py-3 rounded-full flex items-center gap-3 shadow-xl"
+>
+<Twitter size={16} />
+<span className="text-xs uppercase tracking-widest font-bold">
+Intelligence Alert: {newIncidentToast.title}
+</span>
+</motion.div>
+)}
+</AnimatePresence>
 
 <header className="h-14 border-b border-white/10 flex items-center justify-between px-6 bg-[#0a0a0a]">
 
 <div className="flex items-center gap-3">
 
 <div className="w-8 h-8 bg-red-600 rounded flex items-center justify-center">
-<ShieldAlert size={18} />
+<ShieldAlert size={18}/>
 </div>
 
 <div>
 <h1 className="text-sm font-bold uppercase">
 Global Conflict Monitor
 </h1>
+
 <span className="text-[9px] font-mono text-white/40 uppercase">
 Strategic Intelligence Network
 </span>
@@ -127,8 +128,10 @@ onClick={() => loadData(false)}
 disabled={loading}
 className="flex items-center gap-2 px-3 py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded"
 >
+
 <RefreshCw size={14} className={loading ? "animate-spin" : ""}/>
 <span className="text-[10px] uppercase">Sync</span>
+
 </button>
 
 </div>
@@ -152,11 +155,13 @@ selectedIncidentId={selectedIncident?.id}
 <div className="flex flex-1 gap-4 p-4">
 
 <div className="flex-1">
+
 <Map
 incidents={incidents}
 onSelectIncident={setSelectedIncident}
 selectedIncidentId={selectedIncident?.id}
 />
+
 </div>
 
 <div className="w-[360px] hidden lg:block">
@@ -167,39 +172,16 @@ selectedIncidentId={selectedIncident?.id}
 Live Signal Feed
 </div>
 
-<div className="h-[calc(100%-32px)] overflow-y-auto p-2 space-y-6">
-
-<div>
-<div className="text-[10px] uppercase text-white/40 mb-2">
-ALERTX360
-</div>
+<div className="h-[calc(100%-32px)] overflow-y-auto p-2">
 
 <a
 className="twitter-timeline"
 data-theme="dark"
-data-height="400"
+data-height="700"
 data-chrome="nofooter noborders transparent"
-href="https://twitter.com/ALERTX360">
-Tweets by ALERTX360
+href="https://x.com/i/lists/2029775844437299515">
+Conflict Monitor Feed
 </a>
-</div>
-
-<div className="border-t border-white/10 pt-4">
-
-<div className="text-[10px] uppercase text-white/40 mb-2">
-MONITORX99800
-</div>
-
-<a
-className="twitter-timeline"
-data-theme="dark"
-data-height="400"
-data-chrome="nofooter noborders transparent"
-href="https://twitter.com/MonitorX99800">
-Tweets by MonitorX99800
-</a>
-
-</div>
 
 </div>
 
@@ -258,7 +240,9 @@ View Source <ExternalLink size={12}/>
 </main>
 
 <footer className="h-8 bg-[#111] border-t border-white/10 flex items-center px-4 text-[10px] text-white/40">
+
 Last Sync: {lastUpdated.toLocaleTimeString()}
+
 </footer>
 
 </div>
