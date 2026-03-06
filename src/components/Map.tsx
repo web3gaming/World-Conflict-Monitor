@@ -6,7 +6,6 @@ import { Incident } from '../types';
 interface MapProps {
 incidents: Incident[];
 onSelectIncident: (incident: Incident) => void;
-selectedIncidentId?: string;
 }
 
 const Map: React.FC<MapProps> = ({ incidents, onSelectIncident }) => {
@@ -24,160 +23,131 @@ fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json')
 
 useEffect(() => {
 
-if (!worldData || !svgRef.current) return;
+if (!worldData || !svgRef.current || !containerRef.current) return;
 
-const svg = d3.select(svgRef.current);
-const width = svgRef.current.clientWidth;
-const height = svgRef.current.clientHeight;
+const width = containerRef.current.offsetWidth;
+const height = containerRef.current.offsetHeight;
 
-svg.selectAll('*').remove();
+const svg = d3.select(svgRef.current)
+.attr("width", width)
+.attr("height", height);
+
+svg.selectAll("*").remove();
 
 const projection = d3.geoMercator()
-  .scale(width / 6.5)
-  .translate([width / 2, height / 1.5]);
+.scale(width / 6)
+.translate([width / 2, height / 1.55]);
 
 const path = d3.geoPath().projection(projection);
 
-const g = svg.append('g');
+const g = svg.append("g");
 
 const countries = topojson.feature(worldData, worldData.objects.countries) as any;
 
-g.selectAll('path')
-  .data(countries.features)
-  .enter()
-  .append('path')
-  .attr('d', path as any)
-  .attr('fill', '#1a1a1a')
-  .attr('stroke', '#333')
-  .attr('stroke-width', 0.5);
+g.selectAll("path")
+.data(countries.features)
+.enter()
+.append("path")
+.attr("d", path as any)
+.attr("fill", "#1a1a1a")
+.attr("stroke", "#333")
+.attr("stroke-width", 0.5);
 
-const points = g.selectAll('.incident-point')
-  .data(incidents)
-  .enter()
-  .append('g')
-  .attr('class', 'incident-point')
-  .attr('transform', d => {
-    const coords = projection([d.location.lng, d.location.lat]);
-    return coords ? `translate(${coords[0]}, ${coords[1]})` : '';
-  })
-  .style('cursor', 'pointer')
-  .on('click', function (event, d) {
-    event.stopPropagation();
-    onSelectIncident(d);
-  });
-
-points.append('circle')
-  .attr('r', d => d.severity === 'critical' ? 8 : 4)
-  .attr('fill', d => {
-    if (d.severity === 'critical') return '#ef4444';
-    if (d.severity === 'high') return '#f97316';
-    return '#eab308';
-  })
-  .attr('opacity', 0.9);
+const points = g.selectAll(".incident")
+.data(incidents)
+.enter()
+.append("circle")
+.attr("class","incident")
+.attr("cx", d => projection([d.location.lng, d.location.lat])?.[0] || 0)
+.attr("cy", d => projection([d.location.lng, d.location.lat])?.[1] || 0)
+.attr("r", d => d.severity === "critical" ? 7 : 4)
+.attr("fill", d => {
+if(d.severity==="critical") return "#ef4444";
+if(d.severity==="high") return "#f97316";
+return "#eab308";
+})
+.style("cursor","pointer")
+.on("click", (_,d)=> onSelectIncident(d));
 
 const zoom = d3.zoom()
-  .scaleExtent([1, 8])
-  .on('zoom', (event) => {
-    g.attr('transform', event.transform);
-  });
+.scaleExtent([1,8])
+.on("zoom", (event)=>{
+g.attr("transform",event.transform);
+});
 
 zoomRef.current = zoom;
+
 svg.call(zoom as any);
 
-}, [worldData, incidents]);
+},[worldData,incidents]);
 
 const zoomIn = () => {
-if (!svgRef.current || !zoomRef.current) return;
-d3.select(svgRef.current).transition().call(zoomRef.current.scaleBy, 1.3);
+if(!svgRef.current || !zoomRef.current) return;
+d3.select(svgRef.current).transition().call(zoomRef.current.scaleBy,1.3);
 };
 
 const zoomOut = () => {
-if (!svgRef.current || !zoomRef.current) return;
-d3.select(svgRef.current).transition().call(zoomRef.current.scaleBy, 0.7);
+if(!svgRef.current || !zoomRef.current) return;
+d3.select(svgRef.current).transition().call(zoomRef.current.scaleBy,0.7);
 };
 
-const toggleFullscreen = () => {
-if (!containerRef.current) return;
+const fullscreen = () => {
+if(!containerRef.current) return;
 
-if (!document.fullscreenElement) {
-  containerRef.current.requestFullscreen();
-} else {
-  document.exitFullscreen();
+if(!document.fullscreenElement){
+containerRef.current.requestFullscreen();
+}else{
+document.exitFullscreen();
 }
-
 };
 
 return (
+
 <div
 ref={containerRef}
 className="relative w-full h-full bg-[#0a0a0a] overflow-hidden rounded-xl border border-white/5"
->
+><svg ref={svgRef} className="absolute inset-0 w-full h-full" />{/* Radar */}
 
-  <svg ref={svgRef} className="w-full h-full" />
+<div className="radar"></div>{/* Controls */}
 
-  {/* Radar */}
-  <div className="radar-overlay"></div>
+<div className="absolute bottom-6 right-6 flex flex-col gap-2 z-20"><button onClick={zoomIn}
+className="w-9 h-9 bg-black/70 border border-white/20 rounded flex items-center justify-center text-white">
++
+</button>
 
-  {/* Map Controls */}
-  <div className="absolute bottom-6 right-6 flex flex-col gap-2 z-20">
+<button onClick={zoomOut}
+className="w-9 h-9 bg-black/70 border border-white/20 rounded flex items-center justify-center text-white">
+−
+</button>
 
-    <button
-      onClick={zoomIn}
-      className="w-9 h-9 bg-black/60 border border-white/20 rounded flex items-center justify-center hover:bg-black/80 text-white"
-    >
-      +
-    </button>
+<button onClick={fullscreen}
+className="w-9 h-9 bg-black/70 border border-white/20 rounded flex items-center justify-center text-white">
+⛶
+</button>
 
-    <button
-      onClick={zoomOut}
-      className="w-9 h-9 bg-black/60 border border-white/20 rounded flex items-center justify-center hover:bg-black/80 text-white"
-    >
-      −
-    </button>
+</div><style>{`
 
-    <button
-      onClick={toggleFullscreen}
-      className="w-9 h-9 bg-black/60 border border-white/20 rounded flex items-center justify-center hover:bg-black/80 text-white"
-    >
-      ⛶
-    </button>
+.radar{
+position:absolute;
+top:50%;
+left:50%;
+width:420px;
+height:420px;
+margin-left:-210px;
+margin-top:-210px;
+border-radius:50%;
+border:2px solid rgba(0,255,150,0.35);
+pointer-events:none;
+animation:spin 6s linear infinite;
+}
 
-  </div>
+@keyframes spin{
+0%{transform:rotate(0deg)}
+100%{transform:rotate(360deg)}
+}
 
-  <style>{`
+`}</style></div>);
 
-    .radar-overlay{
-      position:absolute;
-      top:0;
-      left:0;
-      width:100%;
-      height:100%;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      pointer-events:none;
-    }
-
-    .radar-overlay::after{
-      content:"";
-      width:420px;
-      height:420px;
-      border-radius:50%;
-      border:2px solid rgba(0,255,150,0.25);
-      position:absolute;
-      animation:radarSweep 6s linear infinite;
-    }
-
-    @keyframes radarSweep{
-      0%{transform:rotate(0deg);}
-      100%{transform:rotate(360deg);}
-    }
-
-  `}</style>
-
-</div>
-
-);
 };
 
 export default Map;
