@@ -13,7 +13,6 @@ const Map: React.FC<MapProps> = ({ incidents, onSelectIncident }) => {
 const svgRef = useRef<SVGSVGElement>(null)
 const mapLayer = useRef<any>(null)
 const projectionRef = useRef<any>(null)
-const zoomRef = useRef<any>(null)
 
 const [worldData, setWorldData] = useState<any>(null)
 
@@ -24,7 +23,7 @@ fetch("https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json")
 }, [])
 
 
-/* CREATE MAP ONLY ONCE */
+/* CREATE MAP */
 
 useEffect(() => {
 
@@ -62,23 +61,38 @@ g.selectAll("path")
 .attr("stroke", "#333")
 .attr("stroke-width", 0.5)
 
-/* ZOOM */
+/* DRAG / PAN ONLY */
 
-const zoom = d3.zoom()
-.scaleExtent([1,8])
-.on("zoom", (event) => {
-g.attr("transform", event.transform)
+const drag = d3.drag()
+.on("drag", (event) => {
+
+const currentTransform = g.attr("transform")
+
+let x = 0
+let y = 0
+
+if (currentTransform) {
+const match = currentTransform.match(/translate\(([^,]+),([^)]+)\)/)
+if (match) {
+x = parseFloat(match[1])
+y = parseFloat(match[2])
+}
+}
+
+x += event.dx
+y += event.dy
+
+g.attr("transform", `translate(${x},${y})`)
+
 })
 
-svg.call(zoom as any)
-
-zoomRef.current = zoom
+svg.call(drag as any)
 
 }, [worldData])
 
 
 
-/* INCIDENT UPDATE ONLY */
+/* INCIDENT UPDATE */
 
 useEffect(() => {
 
@@ -135,81 +149,16 @@ return coords ? `translate(${coords[0]},${coords[1]})` : ""
 },[incidents])
 
 
-
-/* BUTTON ACTIONS */
-
-const zoomIn = () => {
-if(!svgRef.current || !zoomRef.current) return
-d3.select(svgRef.current).transition().call(
-zoomRef.current.scaleBy,
-1.2
-)
-}
-
-const zoomOut = () => {
-if(!svgRef.current || !zoomRef.current) return
-d3.select(svgRef.current).transition().call(
-zoomRef.current.scaleBy,
-0.8
-)
-}
-
-const fullscreen = () => {
-
-const container = svgRef.current?.parentElement
-
-if(!container) return
-
-if(!document.fullscreenElement){
-container.requestFullscreen()
-}else{
-document.exitFullscreen()
-}
-
-}
-
-
-
 return (
 
 <div className="relative w-full h-full bg-[#0a0a0a] overflow-hidden rounded-xl border border-white/5">
 
 <svg ref={svgRef} className="w-full h-full"/>
 
-<div
-style={{
-position:"absolute",
-right:"16px",
-top:"50%",
-transform:"translateY(-50%)",
-display:"flex",
-flexDirection:"column",
-gap:"8px",
-zIndex:9999
-}}
->
-
-<button onClick={zoomIn} style={btn}>+</button>
-<button onClick={zoomOut} style={btn}>-</button>
-<button onClick={fullscreen} style={btn}>⛶</button>
-
-</div>
-
 </div>
 
 )
 
-}
-
-const btn = {
-width:"36px",
-height:"36px",
-background:"rgba(0,0,0,0.7)",
-border:"1px solid rgba(255,255,255,0.2)",
-color:"white",
-borderRadius:"6px",
-cursor:"pointer",
-fontSize:"18px"
 }
 
 export default Map
