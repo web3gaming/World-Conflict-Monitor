@@ -1,69 +1,44 @@
 export default async function handler(req, res) {
 
-  const accounts = ["MonitorX99800", "ALERTX360"];
-
-  const instances = [
-    "https://nitter.poast.org",
-    "https://nitter.net",
-    "https://nitter.privacydev.net"
+  const users = [
+    "MonitorX99800",
+    "ALERTX360"
   ];
 
   try {
 
-    for (const instance of instances) {
+    const tweets = [];
 
-      try {
+    for (const user of users) {
 
-        const tweets = [];
+      const url = `https://cdn.syndication.twimg.com/widgets/timelines/profile?screen_name=${user}`;
 
-        for (const user of accounts) {
+      const r = await fetch(url);
 
-          const url = `${instance}/${user}/rss`;
+      if (!r.ok) continue;
 
-          const r = await fetch(url, { timeout: 5000 });
+      const data = await r.json();
 
-          if (!r.ok) continue;
+      if (!data.body) continue;
 
-          const text = await r.text();
+      const matches = [...data.body.matchAll(/data-tweet-id="(\d+)"/g)].slice(0,3);
 
-          const items = [...text.matchAll(/<item>([\s\S]*?)<\/item>/g)].slice(0,3);
+      for (const m of matches) {
 
-          for (const i of items) {
+        tweets.push({
+          id: m[1],
+          link: `https://x.com/${user}/status/${m[1]}`,
+          title: `New tweet from ${user}`,
+          date: new Date().toISOString()
+        });
 
-            const block = i[1];
-
-            const title = block.match(/<title>(.*?)<\/title>/)?.[1] || "";
-            const link = block.match(/<link>(.*?)<\/link>/)?.[1] || "";
-            const pubDate = block.match(/<pubDate>(.*?)<\/pubDate>/)?.[1] || "";
-
-            tweets.push({
-              title,
-              link,
-              date: pubDate
-            });
-
-          }
-
-        }
-
-        if (tweets.length > 0) {
-
-          tweets.sort((a,b)=> new Date(b.date) - new Date(a.date));
-
-          return res.status(200).json({
-            status: "ok",
-            tweets: tweets.slice(0,10)
-          });
-
-        }
-
-      } catch {}
+      }
 
     }
 
-    return res.status(200).json({
+    res.status(200).json({
       status: "ok",
-      tweets: []
+      tweets
     });
 
   } catch (err) {
