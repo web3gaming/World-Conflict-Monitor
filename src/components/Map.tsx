@@ -30,8 +30,6 @@ const svg = d3.select(svgRef.current)
 const width = svgRef.current.clientWidth
 const height = svgRef.current.clientHeight
 
-/* draw map only once */
-
 if (!gRef.current) {
 
 const projection = d3.geoMercator()
@@ -55,8 +53,6 @@ g.selectAll('path')
 .attr('stroke', '#333')
 .attr('stroke-width', 0.5)
 
-/* zoom system */
-
 const zoom = d3.zoom()
 .scaleExtent([1,8])
 .on('zoom', (event) => {
@@ -71,8 +67,6 @@ gRef.current.svg = svg
 }
 
 const { g, projection } = gRef.current
-
-/* update incidents */
 
 const points = g.selectAll('.incident-point')
 .data(incidents, (d:any) => d.id)
@@ -127,8 +121,6 @@ return coords ? `translate(${coords[0]},${coords[1]})` : ''
 
 }, [worldData, incidents])
 
-/* zoom controls */
-
 const zoomIn = () => {
 if (!gRef.current) return
 gRef.current.svg.transition().call(
@@ -162,27 +154,25 @@ return (
 
 <svg ref={svgRef} className="w-full h-full" />
 
-{/* zoom controls */}
-
-<div className="absolute right-4 top-1/2 -translate-y-1/2 flex flex-col gap-2">
+<div className="absolute right-4 top-1/2 -translate-y-1/2 flex flex-col gap-2 z-50">
 
 <button
 onClick={zoomIn}
-className="w-9 h-9 bg-black/60 border border-white/20 rounded flex items-center justify-center text-white hover:bg-black"
+className="w-9 h-9 bg-black/70 border border-white/20 rounded flex items-center justify-center text-white hover:bg-black"
 >
 +
 </button>
 
 <button
 onClick={zoomOut}
-className="w-9 h-9 bg-black/60 border border-white/20 rounded flex items-center justify-center text-white hover:bg-black"
+className="w-9 h-9 bg-black/70 border border-white/20 rounded flex items-center justify-center text-white hover:bg-black"
 >
 -
 </button>
 
 <button
 onClick={fullscreen}
-className="w-9 h-9 bg-black/60 border border-white/20 rounded flex items-center justify-center text-white hover:bg-black"
+className="w-9 h-9 bg-black/70 border border-white/20 rounded flex items-center justify-center text-white hover:bg-black"
 >
 ⛶
 </button>
