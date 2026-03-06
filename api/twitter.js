@@ -5,50 +5,56 @@ try {
 const feeds = [
 "https://rss.app/feeds/zdpVmPDFhAAogYgk.xml",
 "https://rss.app/feeds/HKRJm8J5kNH4MqrF.xml"
-];
+]
 
-let allTweets = [];
+let tweets = []
 
-for (const feed of feeds) {
+for (const url of feeds) {
 
-const response = await fetch(feed + "?nocache=" + Date.now());
-const xml = await response.text();
+const response = await fetch(url)
+const xml = await response.text()
 
-const items = xml.split("<item>").slice(1);
+const items = xml.split("<item>").slice(1)
 
-items.forEach(item => {
+for (const item of items) {
 
-const title = item.split("<title>")[1]?.split("</title>")[0] || "";
-const link = item.split("<link>")[1]?.split("</link>")[0] || "";
-const pubDate = item.split("<pubDate>")[1]?.split("</pubDate>")[0] || "";
+const title = item.match(/<title><!\[CDATA\[(.*?)\]\]><\/title>/)?.[1] || ""
+const link = item.match(/<link>(.*?)<\/link>/)?.[1] || ""
+const pubDate = item.match(/<pubDate>(.*?)<\/pubDate>/)?.[1] || ""
 
-if (title && link) {
+let text = title
+.replace(/<!\[CDATA\[|\]\]>/g,"")
+.replace(/<[^>]*>/g,"")
+.replace(/^([A-Z]{2,4}\s*)+/,"")
+.trim()
 
-allTweets.push({
-text: title,
+tweets.push({
+text,
 url: link,
 time: pubDate
-});
+})
 
 }
 
-});
-
 }
 
-allTweets.sort((a,b)=> new Date(b.time) - new Date(a.time));
+/* SORT NEWEST FIRST */
+
+tweets = tweets.sort((a,b)=>{
+return new Date(b.time) - new Date(a.time)
+})
 
 res.status(200).json({
-success: true,
-tweets: allTweets.slice(0,10)
-});
+success:true,
+tweets
+})
 
-} catch (error) {
+} catch(err){
 
 res.status(500).json({
 success:false,
-error:"Twitter monitor failed"
-});
+error:err.message
+})
 
 }
 
