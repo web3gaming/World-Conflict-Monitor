@@ -1,20 +1,28 @@
 export default async function handler(req, res) {
-
   try {
 
-    const accounts = [
-      "https://cdn.syndication.twimg.com/widgets/followbutton/info.json?screen_names=ALERTX360",
-      "https://cdn.syndication.twimg.com/widgets/followbutton/info.json?screen_names=MonitorX99800"
-    ];
+    const accounts = ["ALERTX360", "MonitorX99800"];
 
-    const responses = await Promise.all(accounts.map(url => fetch(url)));
-    const data = await Promise.all(responses.map(r => r.json()));
+    const results = [];
 
-    const users = data.flat();
+    for (const account of accounts) {
+
+      const response = await fetch(
+        `https://cdn.syndication.twimg.com/widgets/timelines/profile?screen_name=${account}`
+      );
+
+      const data = await response.json();
+
+      results.push({
+        account,
+        tweets: data?.globalObjects?.tweets || {}
+      });
+
+    }
 
     res.status(200).json({
       success: true,
-      users
+      data: results
     });
 
   } catch (error) {
@@ -25,5 +33,4 @@ export default async function handler(req, res) {
     });
 
   }
-
 }
