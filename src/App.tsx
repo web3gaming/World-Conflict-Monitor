@@ -145,12 +145,43 @@ return (
 
       <StatsPanel incidents={incidents}/>
 
-      <div className="flex-1 p-4">
-        <Map
-          incidents={incidents}
-          onSelectIncident={setSelectedIncident}
-          selectedIncidentId={selectedIncident?.id}
-        />
+      <div className="flex flex-1 gap-4 p-4">
+
+        <div className="flex-1">
+          <Map
+            incidents={incidents}
+            onSelectIncident={setSelectedIncident}
+            selectedIncidentId={selectedIncident?.id}
+          />
+        </div>
+
+        {/* Live X Feed Panel */}
+        <div className="w-[360px] hidden lg:block">
+
+          <div className="h-full bg-[#0d0d0d] border border-white/10 rounded-xl overflow-hidden">
+
+            <div className="px-4 py-2 border-b border-white/10 text-xs uppercase tracking-widest text-white/50">
+              Live Signal Feed
+            </div>
+
+            <div className="h-[calc(100%-32px)] overflow-y-auto">
+
+              <a
+                className="twitter-timeline"
+                data-theme="dark"
+                data-height="800"
+                data-chrome="nofooter noborders transparent"
+                href="https://twitter.com/ALERTX360"
+              >
+                Tweets by ALERTX360
+              </a>
+
+            </div>
+
+          </div>
+
+        </div>
+
       </div>
 
       <AnimatePresence>
