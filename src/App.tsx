@@ -46,7 +46,8 @@ return ()=>clearInterval(interval)
 },[])
 
 
-/* ---------- TWITTER MONITOR ---------- */
+
+/* ---------------- TWITTER ALERT SYSTEM ---------------- */
 
 useEffect(()=>{
 
@@ -64,11 +65,13 @@ if(!tweet) return
 
 const tweetId = tweet.url
 
+/* prevent repeated alerts */
+
 const lastSeen = localStorage.getItem("lastTweetId")
 if(lastSeen===tweetId) return
 
 
-/* CLEAN RSS MARKERS (USILLB, IRUS etc) */
+/* CLEAN RSS FEED GARBAGE */
 
 let text = tweet.text || ""
 
@@ -76,7 +79,7 @@ text = text
 .replace(/<!\[CDATA\[/g,"")
 .replace(/\]\]>/g,"")
 .replace(/<[^>]*>/g,"")
-.replace(/^[A-Z]{2,10}\s*/,"")
+.replace(/^([A-Z]{2,4}\s*)+/,"")   // removes US IL LB IR etc
 .trim()
 
 
@@ -92,11 +95,13 @@ sourceUrl:tweet.url
 
 }
 
+
 setAlertIncident(incident)
 
 setTimeout(()=>{
 setAlertIncident(null)
 },8000)
+
 
 localStorage.setItem("lastTweetId",tweetId)
 
@@ -117,6 +122,7 @@ return ()=>clearInterval(interval)
 },[])
 
 
+
 return(
 
 <div className="flex flex-col h-screen bg-[#050505] text-white font-sans">
@@ -125,6 +131,7 @@ return(
 <AnimatePresence>
 {alertIncident && <AlertPopup incident={alertIncident}/>}
 </AnimatePresence>
+
 
 
 <header className="h-14 border-b border-white/10 flex items-center justify-between px-6 bg-[#0a0a0a]">
@@ -149,6 +156,7 @@ Strategic Intelligence Network
 
 </div>
 
+
 <button
 onClick={()=>loadData(false)}
 disabled={loading}
@@ -169,6 +177,7 @@ Sync
 
 <main className="flex flex-1 overflow-hidden">
 
+
 <aside className="w-80 hidden md:block">
 
 <IncidentFeed
@@ -183,10 +192,12 @@ selectedIncidentId={selectedIncident?.id}
 
 <section className="flex-1 flex flex-col relative">
 
+
 <StatsPanel incidents={incidents}/>
 
 
 <div className="flex flex-1 gap-4 p-4">
+
 
 <div className="flex-1">
 
@@ -205,6 +216,7 @@ onSelectIncident={setSelectedIncident}
 <div className="px-4 py-2 border-b border-white/10 text-xs uppercase tracking-widest text-white/50">
 Live Signal Feed
 </div>
+
 
 <div className="h-[calc(100%-32px)] overflow-y-auto p-2">
 
@@ -225,6 +237,7 @@ Tweets by ALERTX360
 </div>
 
 </div>
+
 
 </div>
 
@@ -251,6 +264,7 @@ Tweets by ALERTX360
 <p className="text-sm text-white/70 mb-4">
 {selectedIncident.description}
 </p>
+
 
 {selectedIncident.sourceUrl && (
 
@@ -279,6 +293,7 @@ View Source
 </section>
 
 </main>
+
 
 
 <footer className="h-8 bg-[#111] border-t border-white/10 flex items-center px-4 text-[10px] text-white/40">
