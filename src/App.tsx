@@ -14,7 +14,11 @@ const [loading, setLoading] = useState(true);
 const [selectedIncident, setSelectedIncident] = useState<Incident | null>(null);
 const [lastUpdated, setLastUpdated] = useState(new Date());
 const [alertIncident, setAlertIncident] = useState<Incident | null>(null);
-const [lastTweetId, setLastTweetId] = useState<string | null>(null);
+
+/* persist last tweet so refresh doesn't trigger popup again */
+const [lastTweetId, setLastTweetId] = useState<string | null>(
+typeof window !== "undefined" ? localStorage.getItem("lastTweetId") : null
+);
 
 const monitoredSources: MonitoredSource[] = [
 { id: "1", url: "https://x.com/ALERTX360", handle: "@ALERTX360", label: "AlertX360" },
@@ -49,6 +53,8 @@ return () => clearInterval(interval);
 
 }, []);
 
+/* TWITTER RSS MONITOR */
+
 useEffect(() => {
 
 const checkTwitter = async () => {
@@ -60,16 +66,21 @@ const data = await res.json();
 
 if (!data.success) return;
 
-const tweet = data.tweets?.[0];
-if (!tweet) return;
+if (!data.tweets || data.tweets.length === 0) return;
 
+/* ensure newest tweet */
+const tweetsSorted = data.tweets.sort(
+(a:any,b:any)=> new Date(b.time).getTime() - new Date(a.time).getTime()
+);
+
+const tweet = tweetsSorted[0];
 const tweetId = tweet.url;
 
 if (tweetId === lastTweetId) return;
 
+/* clean rss text */
 let cleanText = tweet.text || "";
 
-/* SAFE TEXT CLEANING (no regex) */
 cleanText = cleanText.split("<![CDATA[").join("");
 cleanText = cleanText.split("]]>").join("");
 cleanText = cleanText.split("<").join("");
@@ -88,11 +99,14 @@ sourceUrl: tweet.url
 
 setAlertIncident(incident);
 
+/* hide popup */
 setTimeout(() => {
 setAlertIncident(null);
 },7000);
 
+/* store tweet id */
 setLastTweetId(tweetId);
+localStorage.setItem("lastTweetId", tweetId);
 
 } catch (error) {
 
@@ -108,11 +122,13 @@ const interval = setInterval(checkTwitter,15000);
 
 return () => clearInterval(interval);
 
-},[lastTweetId]);
+}, [lastTweetId]);
 
 return (
 
 <div className="flex flex-col h-screen bg-[#050505] text-white font-sans">
+
+{/* ALERT POPUP */}
 
 <AnimatePresence>
 {alertIncident && (
@@ -144,6 +160,8 @@ Location: {alertIncident.location.name}
 
 )}
 </AnimatePresence>
+
+{/* HEADER */}
 
 <header className="h-14 border-b border-white/10 flex items-center justify-between px-6 bg-[#0a0a0a]">
 
@@ -178,6 +196,8 @@ className="flex items-center gap-2 px-3 py-1.5 bg-white/5 hover:bg-white/10 bord
 
 </header>
 
+{/* MAIN */}
+
 <main className="flex flex-1 overflow-hidden">
 
 <aside className="w-80 hidden md:block">
@@ -206,6 +226,8 @@ selectedIncidentId={selectedIncident?.id}
 
 </div>
 
+{/* LIVE TWITTER FEED */}
+
 <div className="w-[360px] hidden lg:block">
 
 <div className="h-full bg-[#0d0d0d] border border-white/10 rounded-xl overflow-hidden">
@@ -233,6 +255,8 @@ Tweets by ALERTX360
 </div>
 
 </div>
+
+{/* INCIDENT DETAILS */}
 
 <AnimatePresence>
 
@@ -286,6 +310,8 @@ View Source
 </section>
 
 </main>
+
+{/* FOOTER */}
 
 <footer className="h-8 bg-[#111] border-t border-white/10 flex items-center px-4 text-[10px] text-white/40">
 Last Sync: {lastUpdated.toLocaleTimeString()}
