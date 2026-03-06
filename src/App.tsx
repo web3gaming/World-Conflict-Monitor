@@ -70,8 +70,8 @@ const tweetId = tweet.url;
 if (tweetId === lastTweetId) return;
 
 const cleanText = tweet.text
-.replace(/<!CDATA[/g,"")
-.replace(/]>/g,"")
+.replace(/<!\[CDATA\[/g,"")
+.replace(/\]\]>/g,"")
 .replace(/<[^>]*>/g,"")
 .trim();
 
