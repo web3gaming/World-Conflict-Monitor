@@ -10,6 +10,7 @@ import { motion, AnimatePresence } from "motion/react"
 export default function App() {
 
 const [incidents,setIncidents] = useState<Incident[]>([])
+const [twitterIncidents,setTwitterIncidents] = useState<Incident[]>([])
 const [loading,setLoading] = useState(true)
 const [selectedIncident,setSelectedIncident] = useState<Incident | null>(null)
 const [lastUpdated,setLastUpdated] = useState(new Date())
@@ -40,9 +41,13 @@ setLastUpdated(new Date())
 }
 
 useEffect(()=>{
+
 loadData(true)
+
 const interval = setInterval(()=>loadData(false),60000)
+
 return ()=>clearInterval(interval)
+
 },[])
 
 
@@ -54,22 +59,17 @@ const locations:any = {
 haifa:{name:"Israel",lat:32.794,lng:34.989},
 "tel aviv":{name:"Israel",lat:32.085,lng:34.781},
 jerusalem:{name:"Israel",lat:31.768,lng:35.213},
-negev:{name:"Israel",lat:30.851,lng:34.783},
-dimona:{name:"Israel",lat:31.068,lng:35.033},
 israel:{name:"Israel",lat:31.046,lng:34.851},
 
 tehran:{name:"Iran",lat:35.689,lng:51.389},
-tabriz:{name:"Iran",lat:38.096,lng:46.273},
 iran:{name:"Iran",lat:32.427,lng:53.688},
 
 riyadh:{name:"Saudi Arabia",lat:24.713,lng:46.675},
 jeddah:{name:"Saudi Arabia",lat:21.485,lng:39.192},
-dammam:{name:"Saudi Arabia",lat:26.420,lng:50.088},
 "saudi arabia":{name:"Saudi Arabia",lat:23.885,lng:45.079},
 
 dubai:{name:"UAE",lat:25.204,lng:55.270},
 "abu dhabi":{name:"UAE",lat:24.453,lng:54.377},
-sharjah:{name:"UAE",lat:25.346,lng:55.420},
 uae:{name:"UAE",lat:24.453,lng:54.377},
 
 doha:{name:"Qatar",lat:25.285,lng:51.531},
@@ -107,6 +107,8 @@ if(!tweet) return
 
 const tweetId = tweet.url
 
+/* Prevent duplicate processing */
+
 if(tweetId === lastTweetId) return
 
 const cleanText = tweet.text
@@ -119,8 +121,6 @@ const text = cleanText.toLowerCase()
 
 let location:any = null
 
-/* SAFE LOCATION MATCH */
-
 for(const key in locations){
 
 const pattern = new RegExp(`\\b${key}\\b`)
@@ -131,6 +131,8 @@ break
 }
 
 }
+
+/* Ignore tweets without location */
 
 if(!location){
 setLastTweetId(tweetId)
@@ -149,15 +151,17 @@ sourceUrl:tweet.url
 
 }
 
-setAlertIncident(incident)
+/* Add only to twitter incidents */
 
-setIncidents(prev => [incident,...prev])
+setTwitterIncidents(prev => [incident,...prev])
+
+setAlertIncident(incident)
 
 setTimeout(()=>{
 
 setAlertIncident(null)
 
-setIncidents(prev => prev.filter(i => i.id !== tweetId))
+setTwitterIncidents(prev => prev.filter(i => i.id !== tweetId))
 
 },20000)
 
@@ -317,8 +321,7 @@ selectedIncidentId={selectedIncident?.id}
 <div className="flex-1">
 
 <Map
-incidents={incidents}
-onSelectIncident={setSelectedIncident}
+incidents={twitterIncidents}
 />
 
 </div>
