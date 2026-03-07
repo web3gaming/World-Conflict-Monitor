@@ -13,10 +13,11 @@ const monitoredCountries = [
 { name:"Iraq",lat:33.2232,lng:43.6793,labelOffset:[8,-6]},
 { name:"Kuwait",lat:29.3117,lng:47.4818,labelOffset:[8,-6]},
 { name:"Saudi Arabia",lat:23.8859,lng:45.0792,labelOffset:[8,12]},
-{ name:"Qatar",lat:25.3548,lng:51.1839,labelOffset:[8,-6]},
-{ name:"Bahrain",lat:26.0667,lng:50.5577,labelOffset:[10,-6]},
-{ name:"UAE",lat:24.4539,lng:54.3773,labelOffset:[-20,-6]},
-{ name:"Oman",lat:20.4730,lng:57.9990,labelOffset:[-18,-6]}
+
+{ name:"Qatar",lat:25.3548,lng:51.1839,labelOffset:[10,10]},
+{ name:"Bahrain",lat:26.0667,lng:50.5577,labelOffset:[12,-10]},
+{ name:"UAE",lat:24.4539,lng:54.3773,labelOffset:[-22,-6]},
+{ name:"Oman",lat:20.4730,lng:57.9990,labelOffset:[-18,10]}
 ]
 
 export default function Map({ incidents }: MapProps){
@@ -26,8 +27,7 @@ const [world,setWorld] = useState<any>(null)
 
 useEffect(()=>{
 
-/* Stable GeoJSON source */
-fetch("https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/world.geojson")
+fetch("https://raw.githubusercontent.com/datasets/geo-countries/master/data/countries.geojson")
 .then(res=>res.json())
 .then(data=>setWorld(data))
 
@@ -45,8 +45,8 @@ const svg = d3.select(svgRef.current)
 svg.selectAll("*").remove()
 
 const projection = d3.geoMercator()
-.center([45,26])
-.scale(width*1.4)
+.center([47,25])
+.scale(width*1.55)
 .translate([width/2,height/2])
 
 const path = d3.geoPath().projection(projection)
@@ -61,8 +61,6 @@ g.selectAll("path")
 .attr("fill","#0f172a")
 .attr("stroke","#64748b")
 .attr("stroke-width",0.4)
-
-/* GREEN COUNTRY MARKERS */
 
 const nodes = g.selectAll(".countryNode")
 .data(monitoredCountries)
@@ -111,7 +109,7 @@ if(!svgRef.current) return
 const svg = d3.select(svgRef.current)
 
 const projection = d3.geoMercator()
-.center([47,24])
+.center([47,25])
 .scale(svgRef.current.clientWidth*1.55)
 .translate([svgRef.current.clientWidth/2,svgRef.current.clientHeight/2])
 
