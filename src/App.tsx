@@ -4,7 +4,7 @@ import { fetchLatestIncidents } from "./services/gemini"
 import Map from "./components/Map"
 import IncidentFeed from "./components/IncidentFeed"
 import StatsPanel from "./components/StatsPanel"
-import { RefreshCw, ShieldAlert, X, ExternalLink } from "lucide-react"
+import { RefreshCw, ShieldAlert } from "lucide-react"
 import { motion, AnimatePresence } from "motion/react"
 
 export default function App() {
@@ -54,6 +54,39 @@ return ()=>clearInterval(interval)
 
 
 
+/* CITY + COUNTRY DETECTION */
+
+const cityMap:any = {
+
+"haifa":{name:"Israel",lat:31.0461,lng:34.8516},
+"tel aviv":{name:"Israel",lat:31.0461,lng:34.8516},
+"jerusalem":{name:"Israel",lat:31.0461,lng:34.8516},
+
+"tehran":{name:"Iran",lat:32.4279,lng:53.6880},
+"isfahan":{name:"Iran",lat:32.4279,lng:53.6880},
+"tabriz":{name:"Iran",lat:32.4279,lng:53.6880},
+
+"riyadh":{name:"Saudi Arabia",lat:23.8859,lng:45.0792},
+"jeddah":{name:"Saudi Arabia",lat:23.8859,lng:45.0792},
+"mecca":{name:"Saudi Arabia",lat:23.8859,lng:45.0792},
+
+"dubai":{name:"UAE",lat:24.4539,lng:54.3773},
+"abu dhabi":{name:"UAE",lat:24.4539,lng:54.3773},
+"sharjah":{name:"UAE",lat:24.4539,lng:54.3773},
+
+"doha":{name:"Qatar",lat:25.3548,lng:51.1839},
+
+"manama":{name:"Bahrain",lat:26.0667,lng:50.5577},
+
+"muscat":{name:"Oman",lat:20.4730,lng:57.9990},
+
+"baghdad":{name:"Iraq",lat:33.2232,lng:43.6793},
+"basra":{name:"Iraq",lat:33.2232,lng:43.6793}
+
+}
+
+
+
 /* TWITTER MONITORING */
 
 useEffect(()=>{
@@ -76,17 +109,32 @@ const tweetId = tweet.url
 if(tweetId === lastTweetId) return
 
 const cleanText = tweet.text
-.replace(/<!\[CDATA\[/g,"")
-.replace(/\]\]>/g,"")
+.replace(/<!CDATA\[/g,"")
+.replace(/\]>/g,"")
 .replace(/<[^>]*>/g,"")
 .trim()
+
+const text = cleanText.toLowerCase()
+
+let location = {name:"Middle East",lat:31,lng:45}
+
+for(const city in cityMap){
+
+if(text.includes(city)){
+
+location = cityMap[city]
+break
+
+}
+
+}
 
 const incident: Incident = {
 id:tweetId,
 title:cleanText,
 description:cleanText,
 timestamp:tweet.time,
-location:{ name:"Signal Intelligence", lat:33, lng:44 },
+location:location,
 severity:"high",
 sourceUrl:tweet.url
 }
@@ -269,50 +317,4 @@ onSelectIncident={setSelectedIncident}
 
 <div className="h-full bg-[#0d0d0d] border border-white/10 rounded-xl overflow-hidden">
 
-<div className="px-4 py-2 border-b border-white/10 text-xs uppercase tracking-widest text-white/50">
-Live Signal Feed
-</div>
-
-<div className="h-[calc(100%-32px)] overflow-y-auto p-2">
-
-<div id="twitter-feed-container">
-
-<a
-className="twitter-timeline"
-data-theme="dark"
-data-height="700"
-data-chrome="nofooter noborders transparent"
-href="https://twitter.com/ALERTX360"
->
-
-Tweets by ALERTX360
-
-</a>
-
-</div>
-
-</div>
-
-</div>
-
-</div>
-
-</div>
-
-</section>
-
-</main>
-
-
-
-<footer className="h-8 bg-[#111] border-t border-white/10 flex items-center px-4 text-[10px] text-white/40">
-
-Last Sync: {lastUpdated.toLocaleTimeString()}
-
-</footer>
-
-</div>
-
-)
-
-}
+<div className="px-4 py-2 border-b border-white/10 text-xs uppercase tracking
