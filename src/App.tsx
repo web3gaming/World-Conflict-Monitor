@@ -54,7 +54,7 @@ return ()=>clearInterval(interval)
 
 
 
-/* CITY + COUNTRY DETECTION */
+/* CITY DETECTION MAP */
 
 const cityMap:any = {
 
@@ -109,8 +109,8 @@ const tweetId = tweet.url
 if(tweetId === lastTweetId) return
 
 const cleanText = tweet.text
-.replace(/<!CDATA\[/g,"")
-.replace(/\]>/g,"")
+.replace(/<!\[CDATA\[/g,"")
+.replace(/\]\]>/g,"")
 .replace(/<[^>]*>/g,"")
 .trim()
 
@@ -317,4 +317,50 @@ onSelectIncident={setSelectedIncident}
 
 <div className="h-full bg-[#0d0d0d] border border-white/10 rounded-xl overflow-hidden">
 
-<div className="px-4 py-2 border-b border-white/10 text-xs uppercase tracking
+<div className="px-4 py-2 border-b border-white/10 text-xs uppercase tracking-widest text-white/50">
+Live Signal Feed
+</div>
+
+<div className="h-[calc(100%-32px)] overflow-y-auto p-2">
+
+<div id="twitter-feed-container">
+
+<a
+className="twitter-timeline"
+data-theme="dark"
+data-height="700"
+data-chrome="nofooter noborders transparent"
+href="https://twitter.com/ALERTX360"
+>
+
+Tweets by ALERTX360
+
+</a>
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+</section>
+
+</main>
+
+
+
+<footer className="h-8 bg-[#111] border-t border-white/10 flex items-center px-4 text-[10px] text-white/40">
+
+Last Sync: {lastUpdated.toLocaleTimeString()}
+
+</footer>
+
+</div>
+
+)
+
+}
