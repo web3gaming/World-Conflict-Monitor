@@ -61,7 +61,6 @@ const locations:any = {
 haifa:{name:"Israel",lat:32.794,lng:34.989},
 "tel aviv":{name:"Israel",lat:32.085,lng:34.781},
 jerusalem:{name:"Israel",lat:31.768,lng:35.213},
-
 israel:{name:"Israel",lat:31.046,lng:34.851},
 
 tehran:{name:"Iran",lat:35.689,lng:51.389},
@@ -113,14 +112,14 @@ const tweetId = tweet.url
 if(tweetId === lastTweetId) return
 
 const cleanText = tweet.text
-.replace(/<!CDATA\[/g,"")
-.replace(/\]>/g,"")
+.replace(/<!\[CDATA\[/g,"")
+.replace(/\]\]>/g,"")
 .replace(/<[^>]*>/g,"")
 .trim()
 
 const text = cleanText.toLowerCase()
 
-let location = null
+let location:any = null
 
 for(const key in locations){
 
@@ -132,8 +131,10 @@ break
 }
 
 if(!location){
+
 setLastTweetId(tweetId)
 return
+
 }
 
 const incident: Incident = {
@@ -153,8 +154,12 @@ setAlertIncident(incident)
 setIncidents(prev => [incident,...prev])
 
 setTimeout(()=>{
+
 setAlertIncident(null)
-},8000)
+
+setIncidents(prev => prev.filter(i => i.id !== tweetId))
+
+},20000)
 
 setLastTweetId(tweetId)
 
@@ -285,4 +290,91 @@ className="flex items-center gap-2 px-3 py-1.5 bg-white/5 hover:bg-white/10 bord
 Sync
 </span>
 
-</
+</button>
+
+</header>
+
+
+
+<main className="flex flex-1 overflow-hidden">
+
+<aside className="w-80 hidden md:block">
+
+<IncidentFeed
+incidents={incidents}
+onSelectIncident={setSelectedIncident}
+selectedIncidentId={selectedIncident?.id}
+/>
+
+</aside>
+
+
+
+<section className="flex-1 flex flex-col relative">
+
+<StatsPanel incidents={incidents}/>
+
+<div className="flex flex-1 gap-4 p-4">
+
+<div className="flex-1">
+
+<Map
+incidents={incidents}
+onSelectIncident={setSelectedIncident}
+/>
+
+</div>
+
+
+
+<div className="w-[360px] hidden lg:block">
+
+<div className="h-full bg-[#0d0d0d] border border-white/10 rounded-xl overflow-hidden">
+
+<div className="px-4 py-2 border-b border-white/10 text-xs uppercase tracking-widest text-white/50">
+Live Signal Feed
+</div>
+
+<div className="h-[calc(100%-32px)] overflow-y-auto p-2">
+
+<div id="twitter-feed-container">
+
+<a
+className="twitter-timeline"
+data-theme="dark"
+data-height="700"
+data-chrome="nofooter noborders transparent"
+href="https://twitter.com/ALERTX360"
+>
+
+Tweets by ALERTX360
+
+</a>
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+</section>
+
+</main>
+
+
+
+<footer className="h-8 bg-[#111] border-t border-white/10 flex items-center px-4 text-[10px] text-white/40">
+
+Last Sync: {lastUpdated.toLocaleTimeString()}
+
+</footer>
+
+</div>
+
+)
+
+}
