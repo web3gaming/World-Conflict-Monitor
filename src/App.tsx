@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from "react"
 import { Incident, MonitoredSource } from "./types"
 import { fetchLatestIncidents } from "./services/gemini"
-import Map from "./components/Map.tsx"
-import IncidentFeed from "./components/IncidentFeed.tsx"
-import StatsPanel from "./components/StatsPanel.tsx"
+import Map from "./components/Map"
+import IncidentFeed from "./components/IncidentFeed"
+import StatsPanel from "./components/StatsPanel"
 import { RefreshCw, ShieldAlert, X, ExternalLink } from "lucide-react"
 import { motion, AnimatePresence } from "motion/react"
 
@@ -20,8 +20,6 @@ const monitoredSources: MonitoredSource[] = [
 { id:"1", url:"https://x.com/ALERTX360", handle:"@ALERTX360", label:"AlertX360" },
 { id:"2", url:"https://x.com/MonitorX99800", handle:"@MonitorX99800", label:"MonitorX" }
 ]
-
-/* LOAD INCIDENTS FROM NEWS */
 
 const loadData = async (isInitial=false) => {
 
@@ -70,6 +68,7 @@ const data = await res.json()
 if(!data.success) return
 
 const tweet = data.tweets?.[0]
+
 if(!tweet) return
 
 const tweetId = tweet.url
@@ -120,11 +119,23 @@ return ()=>clearInterval(interval)
 
 
 
-/* SILENT TWITTER FEED REFRESH */
+/* TWITTER FEED AUTO REFRESH */
 
 useEffect(()=>{
 
-const refreshFeed = () => {
+const reloadTwitterFeed = () => {
+
+const container = document.getElementById("twitter-feed-container")
+
+if(!container) return
+
+const html = container.innerHTML
+
+container.innerHTML = ""
+
+setTimeout(()=>{
+
+container.innerHTML = html
 
 if((window as any).twttr){
 
@@ -132,9 +143,11 @@ if((window as any).twttr){
 
 }
 
+},100)
+
 }
 
-const interval = setInterval(refreshFeed,60000)
+const interval = setInterval(reloadTwitterFeed,60000)
 
 return ()=>clearInterval(interval)
 
@@ -262,6 +275,8 @@ Live Signal Feed
 
 <div className="h-[calc(100%-32px)] overflow-y-auto p-2">
 
+<div id="twitter-feed-container">
+
 <a
 className="twitter-timeline"
 data-theme="dark"
@@ -282,57 +297,7 @@ Tweets by ALERTX360
 
 </div>
 
-
-
-<AnimatePresence>
-
-{selectedIncident && (
-
-<motion.div
-initial={{ x:"100%" }}
-animate={{ x:0 }}
-exit={{ x:"100%" }}
-className="absolute top-0 right-0 w-96 h-full bg-[#0d0d0d] border-l border-white/10 p-6"
->
-
-<div className="flex justify-between mb-4">
-
-<h2 className="font-bold">
-{selectedIncident.title}
-</h2>
-
-<button onClick={()=>setSelectedIncident(null)}>
-<X size={18}/>
-</button>
-
 </div>
-
-<p className="text-sm text-white/70 mb-4">
-{selectedIncident.description}
-</p>
-
-{selectedIncident.sourceUrl && (
-
-<a
-href={selectedIncident.sourceUrl}
-target="_blank"
-rel="noopener noreferrer"
-className="text-blue-400 text-xs flex items-center gap-1"
->
-
-View Source
-
-<ExternalLink size={12}/>
-
-</a>
-
-)}
-
-</motion.div>
-
-)}
-
-</AnimatePresence>
 
 </section>
 
