@@ -20,7 +20,7 @@ const monitoredCountries = [
 { name:"Bahrain",lat:27.00,lng:49.90,labelOffset:[0,-10],markerOffset:[0,10]},
 { name:"Qatar",lat:25.3548,lng:51.1839,labelOffset:[0,-10],markerOffset:[0,10]},
 { name:"UAE",lat:24.4539,lng:54.3773,labelOffset:[0,-10],markerOffset:[0,10]},
-{ name:"Oman",lat:20.4730,lng:57.9990,labelOffset:[0,-10],markerOffset:[0,10]}
+{ name:"Oman",lat:21.20,lng:56.30,labelOffset:[0,-10],markerOffset:[0,10]}
 
 ]
 
