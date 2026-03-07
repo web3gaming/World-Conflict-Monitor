@@ -1,318 +1,157 @@
 import React, { useEffect, useState } from "react"
-import { Incident, MonitoredSource } from "./types"
-import { fetchLatestIncidents } from "./services/gemini"
 import Map from "./components/Map"
-import IncidentFeed from "./components/IncidentFeed"
-import StatsPanel from "./components/StatsPanel"
-import { RefreshCw, ShieldAlert, X, ExternalLink } from "lucide-react"
-import { motion, AnimatePresence } from "motion/react"
+
+interface Tweet {
+  id: string
+  text: string
+}
+
+interface Incident {
+  id: string
+  lat: number
+  lng: number
+  title: string
+}
+
+function detectIncidents(tweets: Tweet[]): Incident[] {
+
+  const keywords = [
+    "missile",
+    "drone",
+    "strike",
+    "attack",
+    "explosion",
+    "launch",
+    "airstrike"
+  ]
+
+  return tweets
+    .filter(t =>
+      keywords.some(k =>
+        t.text.toLowerCase().includes(k)
+      )
+    )
+    .map(t => {
+
+      let lat = 32
+      let lng = 53
+
+      if (t.text.includes("Iran")) {
+        lat = 32
+        lng = 53
+      }
+
+      if (t.text.includes("Israel")) {
+        lat = 31.5
+        lng = 35
+      }
+
+      if (t.text.includes("Saudi")) {
+        lat = 24
+        lng = 45
+      }
+
+      if (t.text.includes("Bahrain")) {
+        lat = 26
+        lng = 50
+      }
+
+      if (t.text.includes("Qatar")) {
+        lat = 25
+        lng = 51
+      }
+
+      if (t.text.includes("UAE")) {
+        lat = 24
+        lng = 54
+      }
+
+      return {
+        id: t.id,
+        lat,
+        lng,
+        title: t.text
+      }
+
+    })
+
+}
 
 export default function App() {
 
-const [incidents,setIncidents] = useState<Incident[]>([])
-const [loading,setLoading] = useState(true)
-const [selectedIncident,setSelectedIncident] = useState<Incident | null>(null)
-const [lastUpdated,setLastUpdated] = useState(new Date())
-const [alertIncident,setAlertIncident] = useState<Incident | null>(null)
-const [lastTweetId,setLastTweetId] = useState<string | null>(null)
+  const [tweets, setTweets] = useState<Tweet[]>([])
+  const [incidents, setIncidents] = useState<Incident[]>([])
 
-const monitoredSources: MonitoredSource[] = [
-{ id:"1", url:"https://x.com/ALERTX360", handle:"@ALERTX360", label:"AlertX360" },
-{ id:"2", url:"https://x.com/MonitorX99800", handle:"@MonitorX99800", label:"MonitorX" }
-]
+  async function loadTweets() {
 
-const loadData = async (isInitial=false) => {
+    try {
 
-if(isInitial) setLoading(true)
+      const res = await fetch("/api/twitter")
+      const data = await res.json()
 
-const data = await fetchLatestIncidents(monitoredSources)
+      if (!data.tweets) return
 
-setIncidents(data)
+      setTweets(data.tweets)
 
-if(selectedIncident){
+      const detected = detectIncidents(data.tweets)
 
-const updated = data.find(i => i.id === selectedIncident.id)
+      setIncidents(detected)
 
-if(updated) setSelectedIncident(updated)
+    } catch (err) {
 
-}
+      console.log("tweet error")
 
-setLoading(false)
-setLastUpdated(new Date())
+    }
 
-}
+  }
 
-useEffect(()=>{
+  useEffect(() => {
 
-loadData(true)
+    loadTweets()
 
-const interval = setInterval(()=>loadData(false),60000)
+    const interval = setInterval(() => {
 
-return ()=>clearInterval(interval)
+      loadTweets()
 
-},[])
+    }, 60000)
 
+    return () => clearInterval(interval)
 
+  }, [])
 
-/* TWITTER MONITORING */
+  return (
 
-useEffect(()=>{
+    <div className="w-screen h-screen bg-black text-white flex">
 
-const checkTwitter = async () => {
+      <div className="w-1/4 border-r border-gray-800 overflow-y-scroll">
 
-try{
+        <div className="p-4 text-xl font-bold">
+          INTELLIGENCE STREAM
+        </div>
 
-const res = await fetch("/api/twitter")
-const data = await res.json()
+        {tweets.map(t => (
 
-if(!data.success) return
+          <div
+            key={t.id}
+            className="p-4 border-b border-gray-800 text-sm"
+          >
 
-const tweet = data.tweets?.[0]
+            {t.text}
 
-if(!tweet) return
+          </div>
 
-const tweetId = tweet.url
+        ))}
 
-if(tweetId === lastTweetId) return
+      </div>
 
-const cleanText = tweet.text
-.replace(/<!\[CDATA\[/g,"")
-.replace(/\]\]>/g,"")
-.replace(/<[^>]*>/g,"")
-.trim()
+      <div className="flex-1">
 
-const incident: Incident = {
-id:tweetId,
-title:cleanText,
-description:cleanText,
-timestamp:tweet.time,
-location:{ name:"Signal Intelligence", lat:33, lng:44 },
-severity:"high",
-sourceUrl:tweet.url
-}
+        <Map incidents={incidents} />
 
-setAlertIncident(incident)
+      </div>
 
-setIncidents(prev => [incident,...prev])
+    </div>
 
-setTimeout(()=>{
-setAlertIncident(null)
-},7000)
-
-setLastTweetId(tweetId)
-
-}catch(err){
-
-console.error("Twitter monitor error",err)
-
-}
-
-}
-
-checkTwitter()
-
-const interval = setInterval(checkTwitter,15000)
-
-return ()=>clearInterval(interval)
-
-},[lastTweetId])
-
-
-
-/* TWITTER FEED AUTO REFRESH */
-
-useEffect(()=>{
-
-const reloadTwitterFeed = () => {
-
-const container = document.getElementById("twitter-feed-container")
-
-if(!container) return
-
-const html = container.innerHTML
-
-container.innerHTML = ""
-
-setTimeout(()=>{
-
-container.innerHTML = html
-
-if((window as any).twttr){
-
-(window as any).twttr.widgets.load()
-
-}
-
-},100)
-
-}
-
-const interval = setInterval(reloadTwitterFeed,60000)
-
-return ()=>clearInterval(interval)
-
-},[])
-
-
-
-return (
-
-<div className="flex flex-col h-screen bg-[#050505] text-white font-sans">
-
-<AnimatePresence>
-
-{alertIncident && (
-
-<motion.div
-initial={{ y:-120, opacity:0 }}
-animate={{ y:20, opacity:1 }}
-exit={{ y:-120, opacity:0 }}
-className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-red-600 px-6 py-4 rounded-xl flex items-center gap-4 shadow-2xl max-w-xl"
->
-
-<div className="flex flex-col">
-
-<span className="text-xs uppercase tracking-widest font-bold">
-SIGNAL DETECTED
-</span>
-
-<span className="text-sm font-semibold">
-{alertIncident.title}
-</span>
-
-<span className="text-[11px] text-white/80">
-Location: {alertIncident.location.name}
-</span>
-
-</div>
-
-</motion.div>
-
-)}
-
-</AnimatePresence>
-
-
-
-<header className="h-14 border-b border-white/10 flex items-center justify-between px-6 bg-[#0a0a0a]">
-
-<div className="flex items-center gap-3">
-
-<div className="w-8 h-8 bg-red-600 rounded flex items-center justify-center">
-<ShieldAlert size={18}/>
-</div>
-
-<div>
-
-<h1 className="text-sm font-bold uppercase">
-Global Conflict Monitor
-</h1>
-
-<span className="text-[9px] font-mono text-white/40 uppercase">
-Strategic Intelligence Network
-</span>
-
-</div>
-
-</div>
-
-<button
-onClick={()=>loadData(false)}
-disabled={loading}
-className="flex items-center gap-2 px-3 py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded"
->
-
-<RefreshCw size={14} className={loading ? "animate-spin" : ""}/>
-
-<span className="text-[10px] uppercase">
-Sync
-</span>
-
-</button>
-
-</header>
-
-
-
-<main className="flex flex-1 overflow-hidden">
-
-<aside className="w-80 hidden md:block">
-
-<IncidentFeed
-incidents={incidents}
-onSelectIncident={setSelectedIncident}
-selectedIncidentId={selectedIncident?.id}
-/>
-
-</aside>
-
-
-
-<section className="flex-1 flex flex-col relative">
-
-<StatsPanel incidents={incidents}/>
-
-<div className="flex flex-1 gap-4 p-4">
-
-<div className="flex-1">
-
-<Map
-incidents={incidents}
-onSelectIncident={setSelectedIncident}
-/>
-
-</div>
-
-
-
-<div className="w-[360px] hidden lg:block">
-
-<div className="h-full bg-[#0d0d0d] border border-white/10 rounded-xl overflow-hidden">
-
-<div className="px-4 py-2 border-b border-white/10 text-xs uppercase tracking-widest text-white/50">
-Live Signal Feed
-</div>
-
-<div className="h-[calc(100%-32px)] overflow-y-auto p-2">
-
-<div id="twitter-feed-container">
-
-<a
-className="twitter-timeline"
-data-theme="dark"
-data-height="700"
-data-chrome="nofooter noborders transparent"
-href="https://twitter.com/ALERTX360"
->
-
-Tweets by ALERTX360
-
-</a>
-
-</div>
-
-</div>
-
-</div>
-
-</div>
-
-</div>
-
-</section>
-
-</main>
-
-
-
-<footer className="h-8 bg-[#111] border-t border-white/10 flex items-center px-4 text-[10px] text-white/40">
-
-Last Sync: {lastUpdated.toLocaleTimeString()}
-
-</footer>
-
-</div>
-
-)
+  )
 
 }
