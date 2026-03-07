@@ -74,7 +74,6 @@ function detectIncidents(tweets: Tweet[]): Incident[] {
       }
 
     })
-
 }
 
 export default function App() {
@@ -98,9 +97,7 @@ export default function App() {
       setIncidents(detected)
 
     } catch (err) {
-
-      console.log("tweet error")
-
+      console.log("tweet load error")
     }
 
   }
@@ -110,9 +107,7 @@ export default function App() {
     loadTweets()
 
     const interval = setInterval(() => {
-
       loadTweets()
-
     }, 60000)
 
     return () => clearInterval(interval)
@@ -123,30 +118,66 @@ export default function App() {
 
     <div className="w-screen h-screen bg-black text-white flex">
 
-      <div className="w-1/4 border-r border-gray-800 overflow-y-scroll">
+      {/* LEFT PANEL */}
+      <div className="w-1/4 border-r border-gray-800 flex flex-col">
 
-        <div className="p-4 text-xl font-bold">
+        <div className="p-4 text-lg font-bold border-b border-gray-800">
           INTELLIGENCE STREAM
         </div>
 
-        {tweets.map(t => (
+        <div className="flex-1 overflow-y-scroll">
 
-          <div
-            key={t.id}
-            className="p-4 border-b border-gray-800 text-sm"
-          >
+          {tweets.map(t => (
 
-            {t.text}
+            <div
+              key={t.id}
+              className="p-4 border-b border-gray-800 text-sm"
+            >
+              {t.text}
+            </div>
 
-          </div>
+          ))}
 
-        ))}
+        </div>
 
       </div>
 
-      <div className="flex-1">
 
-        <Map incidents={incidents} />
+      {/* MAP CENTER */}
+      <div className="flex-1 flex flex-col">
+
+        <div className="p-4 border-b border-gray-800 text-lg font-bold">
+          GLOBAL CONFLICT MONITOR
+        </div>
+
+        <div className="flex-1">
+          <Map incidents={incidents} />
+        </div>
+
+      </div>
+
+
+      {/* RIGHT PANEL */}
+      <div className="w-1/4 border-l border-gray-800 flex flex-col">
+
+        <div className="p-4 text-lg font-bold border-b border-gray-800">
+          LIVE SIGNAL FEED
+        </div>
+
+        <div className="flex-1 overflow-y-scroll">
+
+          {tweets.map(t => (
+
+            <div
+              key={"live-" + t.id}
+              className="p-4 border-b border-gray-800 text-sm"
+            >
+              {t.text}
+            </div>
+
+          ))}
+
+        </div>
 
       </div>
 
