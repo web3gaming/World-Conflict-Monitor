@@ -1,185 +1,202 @@
-import React, { useEffect, useRef, useState } from "react"
+import React, { useEffect, useRef } from "react"
 import * as d3 from "d3"
 import * as topojson from "topojson-client"
-import { Incident } from "../types"
 
-interface MapProps {
-  incidents: Incident[]
-  onSelectIncident: (incident: Incident) => void
+interface Incident {
+  id:string
+  lat:number
+  lng:number
+  title:string
+}
+
+interface Props {
+  incidents:Incident[]
 }
 
 const monitoredCountries = [
-  { name: "Iran", lat: 32.4, lng: 53.7 },
-  { name: "Israel", lat: 31.5, lng: 34.8 },
-  { name: "Saudi Arabia", lat: 23.9, lng: 45.0 },
-  { name: "Qatar", lat: 25.3, lng: 51.2 },
-  { name: "UAE", lat: 24.3, lng: 54.4 },
-  { name: "Kuwait", lat: 29.3, lng: 47.5 },
-  { name: "Bahrain", lat: 26.0, lng: 50.5 },
-  { name: "Oman", lat: 21.5, lng: 55.9 },
-  { name: "Jordan", lat: 31.2, lng: 36.3 },
-  { name: "Iraq", lat: 33.2, lng: 44.4 }
+{ name:"Iran",lat:32,lng:53 },
+{ name:"Israel",lat:31.5,lng:35 },
+{ name:"Jordan",lat:31,lng:36 },
+{ name:"Iraq",lat:33,lng:44 },
+{ name:"Kuwait",lat:29.3,lng:47.5 },
+{ name:"Saudi Arabia",lat:24,lng:45 },
+{ name:"Qatar",lat:25.3,lng:51.2 },
+{ name:"Bahrain",lat:26,lng:50.5 },
+{ name:"UAE",lat:24,lng:54 },
+{ name:"Oman",lat:21,lng:55 }
 ]
 
-const monitoredNames = monitoredCountries.map(c => c.name)
+const Map:React.FC<Props> = ({incidents})=>{
 
-const Map: React.FC<MapProps> = ({ incidents, onSelectIncident }) => {
+const svgRef=useRef<SVGSVGElement|null>(null)
 
-  const svgRef = useRef<SVGSVGElement>(null)
-  const mapLayer = useRef<any>(null)
-  const projectionRef = useRef<any>(null)
+useEffect(()=>{
 
-  const [worldData, setWorldData] = useState<any>(null)
+if(!svgRef.current)return
 
-  useEffect(() => {
-    fetch("https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json")
-      .then(res => res.json())
-      .then(data => setWorldData(data))
-  }, [])
+const width=svgRef.current.clientWidth
+const height=svgRef.current.clientHeight
 
-  useEffect(() => {
+const svg=d3.select(svgRef.current)
 
-    if (!worldData || !svgRef.current) return
-    if (mapLayer.current) return
+svg.selectAll("*").remove()
 
-    const svg = d3.select(svgRef.current)
+const projection=d3.geoMercator()
+.center([45,27])
+.scale(width*1.4)
+.translate([width/2,height/2])
 
-    const width = svgRef.current.clientWidth
-    const height = svgRef.current.clientHeight
+const path=d3.geoPath().projection(projection)
 
-    const projection = d3.geoMercator()
-      .center([45, 27])
-      .scale(width * 1.4)
-      .translate([width / 2, height / 2])
+const g=svg.append("g")
 
-    projectionRef.current = projection
+d3.json("https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json")
+.then((world:any)=>{
 
-    const path = d3.geoPath().projection(projection)
+const countries=topojson.feature(
+world,
+world.objects.countries
+)
 
-    const g = svg.append("g")
-    mapLayer.current = g
+g.selectAll("path")
+.data(countries.features)
+.enter()
+.append("path")
+.attr("d",path as any)
+.attr("fill",(d:any)=>{
 
-    const countries = topojson.feature(
-      worldData,
-      worldData.objects.countries
-    ) as any
+const name=d.properties.name
 
-    g.selectAll("path")
-      .data(countries.features)
-      .enter()
-      .append("path")
-      .attr("d", path as any)
-      .attr("fill", (d: any) => {
-        const name = d.properties.name
-        if (monitoredNames.includes(name)) {
-          return "#1c2c3c"
-        }
-        return "#111"
-      })
-      .attr("stroke", "#333")
-      .attr("stroke-width", 0.6)
+if(
+name==="Iran"||
+name==="Israel"||
+name==="Jordan"||
+name==="Iraq"||
+name==="Kuwait"||
+name==="Saudi Arabia"||
+name==="Qatar"||
+name==="Bahrain"||
+name==="United Arab Emirates"||
+name==="Oman"
+){
+return "#1e3a5f"
+}
 
-  }, [worldData])
+return "#0f0f0f"
 
-  useEffect(() => {
+})
+.attr("stroke","#666")
+.attr("stroke-width",0.6)
 
-    if (!mapLayer.current || !projectionRef.current) return
+})
 
-    const g = mapLayer.current
-    const projection = projectionRef.current
+},[])
 
-    const nodes = g.selectAll(".country-node")
-      .data(monitoredCountries)
+useEffect(()=>{
 
-    const enter = nodes.enter()
-      .append("g")
-      .attr("class", "country-node")
+if(!svgRef.current)return
 
-    enter.append("circle")
-      .attr("r", 3)
-      .attr("fill", "#00ffaa")
+const svg=d3.select(svgRef.current)
 
-    enter.append("circle")
-      .attr("r", 4)
-      .attr("fill", "none")
-      .attr("stroke", "#00ffaa")
-      .attr("stroke-width", 1)
-      .append("animate")
-      .attr("attributeName", "r")
-      .attr("from", "4")
-      .attr("to", "10")
-      .attr("dur", "2s")
-      .attr("repeatCount", "indefinite")
+const projection=d3.geoMercator()
+.center([45,27])
+.scale(svgRef.current.clientWidth*1.4)
+.translate([
+svgRef.current.clientWidth/2,
+svgRef.current.clientHeight/2
+])
 
-    enter.append("text")
-      .text((d: any) => d.name)
-      .attr("fill", "#ccc")
-      .attr("font-size", "10px")
-      .attr("dx", 6)
-      .attr("dy", -6)
+const nodes=svg.selectAll(".countryNode")
+.data(monitoredCountries)
 
-    g.selectAll(".country-node")
-      .attr("transform", (d: any) => {
-        const coords = projection([d.lng, d.lat])
-        return coords ? `translate(${coords[0]},${coords[1]})` : ""
-      })
+const enter=nodes.enter()
+.append("g")
+.attr("class","countryNode")
 
-  }, [worldData])
+enter.append("circle")
+.attr("r",4)
+.attr("fill","#00ffaa")
 
-  useEffect(() => {
+enter.append("text")
+.text((d:any)=>d.name)
+.attr("font-size","10px")
+.attr("fill","#ccc")
+.attr("dx",6)
+.attr("dy",-6)
 
-    if (!mapLayer.current || !projectionRef.current) return
+svg.selectAll(".countryNode")
+.attr("transform",(d:any)=>{
 
-    const g = mapLayer.current
-    const projection = projectionRef.current
+const p=projection([d.lng,d.lat])
 
-    const points = g.selectAll(".incident")
-      .data(incidents, (d: any) => d.url)
+return`translate(${p[0]},${p[1]})`
 
-    points.exit().remove()
+})
 
-    const enter = points.enter()
-      .append("g")
-      .attr("class", "incident")
-      .style("cursor", "pointer")
-      .on("click", (event, d) => {
-        event.stopPropagation()
-        onSelectIncident(d)
-      })
+},[])
 
-    enter.append("circle")
-      .attr("r", 6)
-      .attr("fill", "#ff4444")
+useEffect(()=>{
 
-    enter.append("circle")
-      .attr("r", 6)
-      .attr("fill", "none")
-      .attr("stroke", "#ff4444")
-      .attr("stroke-width", 1)
-      .append("animate")
-      .attr("attributeName", "r")
-      .attr("from", "6")
-      .attr("to", "18")
-      .attr("dur", "1.6s")
-      .attr("repeatCount", "indefinite")
+if(!svgRef.current)return
 
-    g.selectAll(".incident")
-      .attr("transform", (d: any) => {
-        const coords = projection([d.location.lng, d.location.lat])
-        return coords ? `translate(${coords[0]},${coords[1]})` : ""
-      })
+const svg=d3.select(svgRef.current)
 
-  }, [incidents])
+const projection=d3.geoMercator()
+.center([45,27])
+.scale(svgRef.current.clientWidth*1.4)
+.translate([
+svgRef.current.clientWidth/2,
+svgRef.current.clientHeight/2
+])
 
-  return (
+const alerts=svg.selectAll(".incident")
+.data(incidents,(d:any)=>d.id)
 
-    <div className="relative w-full h-full bg-[#0a0a0a] overflow-hidden rounded-xl border border-white/5">
+alerts.exit().remove()
 
-      <svg ref={svgRef} className="w-full h-full" />
+const enter=alerts.enter()
+.append("g")
+.attr("class","incident")
 
-    </div>
+enter.append("circle")
+.attr("r",7)
+.attr("fill","#ff4444")
 
-  )
+enter.append("circle")
+.attr("r",7)
+.attr("stroke","#ff4444")
+.attr("fill","none")
+.attr("stroke-width",2)
+.append("animate")
+.attr("attributeName","r")
+.attr("from","7")
+.attr("to","18")
+.attr("dur","1.5s")
+.attr("repeatCount","indefinite")
+
+svg.selectAll(".incident")
+.attr("transform",(d:any)=>{
+
+const p=projection([d.lng,d.lat])
+
+return`translate(${p[0]},${p[1]})`
+
+})
+
+},[incidents])
+
+return(
+
+<div className="w-full h-full bg-black">
+
+<svg
+ref={svgRef}
+className="w-full h-full"
+/>
+
+</div>
+
+)
 
 }
 
