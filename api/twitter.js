@@ -2,32 +2,35 @@ export default async function handler(req, res) {
 
 try {
 
-const feeds = [
+const instances = [
+"https://nitter.net",
+"https://nitter.privacydev.net",
+"https://nitter.poast.org",
+"https://nitter.unixfox.eu"
+]
 
-"https://nitter.net/ALERTX360/rss",
-"https://nitter.net/MonitorX99800/rss",
-
-"https://nitter.poast.org/ALERTX360/rss",
-"https://nitter.poast.org/MonitorX99800/rss",
-
-"https://nitter.privacydev.net/ALERTX360/rss",
-"https://nitter.privacydev.net/MonitorX99800/rss"
-
+const accounts = [
+"ALERTX360",
+"MonitorX99800"
 ]
 
 let tweets = []
 
-for (const feed of feeds) {
+for (const instance of instances) {
 
 try {
 
-const response = await fetch(feed, {
-headers: {
-"User-Agent": "Mozilla/5.0"
+for (const account of accounts) {
+
+const url = `${instance}/${account}/rss`
+
+const response = await fetch(url,{
+headers:{
+"user-agent":"Mozilla/5.0"
 }
 })
 
-if (!response.ok) continue
+if(!response.ok) continue
 
 const xml = await response.text()
 
@@ -39,45 +42,40 @@ const titleMatch = item.match(/<title>(.*?)<\/title>/)
 const linkMatch = item.match(/<link>(.*?)<\/link>/)
 const dateMatch = item.match(/<pubDate>(.*?)<\/pubDate>/)
 
-let text = titleMatch ? titleMatch[1] : ""
-let url = linkMatch ? linkMatch[1] : ""
-let time = dateMatch ? dateMatch[1] : ""
-
-text = text
-.replace(/<!\[CDATA\[|\]\]>/g,"")
-.replace(/<[^>]*>/g,"")
-.trim()
+const text = titleMatch ? titleMatch[1] : ""
+const url = linkMatch ? linkMatch[1] : ""
+const time = dateMatch ? dateMatch[1] : ""
 
 tweets.push({
-text,
+text:text.replace(/<[^>]*>/g,"").trim(),
 url,
 time
 })
 
 }
 
-} catch (err) {
+}
 
+if(tweets.length > 0) break
+
+} catch(err) {
 continue
-
 }
 
 }
 
 
 
-/* REMOVE DUPLICATE TWEETS */
+/* REMOVE DUPLICATES */
 
 const uniqueTweets = []
 const seen = new Set()
 
-for (const tweet of tweets) {
+for (const t of tweets) {
 
-if (!seen.has(tweet.url)) {
-
-seen.add(tweet.url)
-uniqueTweets.push(tweet)
-
+if (!seen.has(t.url)) {
+seen.add(t.url)
+uniqueTweets.push(t)
 }
 
 }
@@ -94,28 +92,24 @@ return new Date(b.time) - new Date(a.time)
 
 
 
-/* LIMIT RESPONSE */
+/* LIMIT RESULTS */
 
 const latestTweets = uniqueTweets.slice(0,20)
 
 
 
 res.status(200).json({
-
 success:true,
 tweets:latestTweets
-
 })
 
 
 
-} catch (error) {
+} catch(error) {
 
 res.status(500).json({
-
 success:false,
 error:error.message
-
 })
 
 }
