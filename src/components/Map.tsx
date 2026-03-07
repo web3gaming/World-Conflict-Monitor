@@ -24,8 +24,8 @@ const monitoredCountries = [
 const Map: React.FC<MapProps> = ({ incidents, onSelectIncident }) => {
 
 const svgRef = useRef<SVGSVGElement>(null)
+const mapLayer = useRef<any>(null)
 const projectionRef = useRef<any>(null)
-const layerRef = useRef<any>(null)
 
 const [worldData,setWorldData] = useState<any>(null)
 
@@ -38,13 +38,12 @@ fetch("https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json")
 useEffect(()=>{
 
 if(!worldData || !svgRef.current) return
+if(mapLayer.current) return
 
 const svg = d3.select(svgRef.current)
 
 const width = svgRef.current.clientWidth
 const height = svgRef.current.clientHeight
-
-svg.selectAll("*").remove()
 
 const projection = d3.geoMercator()
 .scale(width/6.5)
@@ -55,7 +54,7 @@ projectionRef.current = projection
 const path = d3.geoPath().projection(projection)
 
 const g = svg.append("g")
-layerRef.current = g
+mapLayer.current = g
 
 const countries = topojson.feature(
 worldData,
@@ -67,50 +66,69 @@ g.selectAll("path")
 .enter()
 .append("path")
 .attr("d",path as any)
-.attr("fill","#111")
+.attr("fill","#121212")
 .attr("stroke","#333")
 .attr("stroke-width",0.5)
 
 },[worldData])
 
+/* COUNTRY RADAR NODES */
+
 useEffect(()=>{
 
-if(!layerRef.current || !projectionRef.current) return
+if(!mapLayer.current || !projectionRef.current) return
 
-const g = layerRef.current
+const g = mapLayer.current
 const projection = projectionRef.current
 
-const nodes = g.selectAll(".node")
+const nodes = g.selectAll(".country-node")
 .data(monitoredCountries)
 
-nodes.enter()
-.append("circle")
-.attr("class","node")
-.attr("r",3)
+const enter = nodes.enter()
+.append("g")
+.attr("class","country-node")
+
+enter.append("circle")
+.attr("r",5)
 .attr("fill","#00ffaa")
-.attr("opacity",0.6)
-.attr("transform",(d:any)=>{
+.attr("opacity",0.9)
 
-const coords = projection([d.lng,d.lat])
-
-return `translate(${coords[0]},${coords[1]})`
-
-})
-
+enter.append("circle")
+.attr("r",8)
+.attr("fill","none")
+.attr("stroke","#00ffaa")
+.attr("stroke-width",1)
 .append("animate")
 .attr("attributeName","r")
-.attr("from","3")
-.attr("to","7")
+.attr("from","8")
+.attr("to","18")
 .attr("dur","2s")
 .attr("repeatCount","indefinite")
 
+enter.append("text")
+.text((d:any)=>d.name)
+.attr("fill","#ccc")
+.attr("font-size","10px")
+.attr("dx",8)
+.attr("dy",4)
+
+g.selectAll(".country-node")
+.attr("transform",(d:any)=>{
+
+const coords = projection([d.lng,d.lat])
+return coords ? `translate(${coords[0]},${coords[1]})` : ""
+
+})
+
 },[worldData])
+
+/* INCIDENT MARKERS */
 
 useEffect(()=>{
 
-if(!layerRef.current || !projectionRef.current) return
+if(!mapLayer.current || !projectionRef.current) return
 
-const g = layerRef.current
+const g = mapLayer.current
 const projection = projectionRef.current
 
 const points = g.selectAll(".incident")
@@ -119,29 +137,34 @@ const points = g.selectAll(".incident")
 points.exit().remove()
 
 const enter = points.enter()
-.append("circle")
+.append("g")
 .attr("class","incident")
-.attr("r",6)
-.attr("fill","#ff4444")
-.attr("opacity",0.9)
 .style("cursor","pointer")
 .on("click",(event,d)=>{
 onSelectIncident(d)
 })
 
-enter.append("animate")
+enter.append("circle")
+.attr("r",7)
+.attr("fill","#ff4444")
+
+enter.append("circle")
+.attr("r",7)
+.attr("fill","none")
+.attr("stroke","#ff4444")
+.attr("stroke-width",1)
+.append("animate")
 .attr("attributeName","r")
-.attr("from","6")
-.attr("to","16")
-.attr("dur","1.5s")
+.attr("from","7")
+.attr("to","22")
+.attr("dur","1.6s")
 .attr("repeatCount","indefinite")
 
 g.selectAll(".incident")
 .attr("transform",(d:any)=>{
 
 const coords = projection([d.location.lng,d.location.lat])
-
-return `translate(${coords[0]},${coords[1]})`
+return coords ? `translate(${coords[0]},${coords[1]})` : ""
 
 })
 
