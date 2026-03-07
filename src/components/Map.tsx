@@ -7,18 +7,21 @@ interface MapProps {
 }
 
 const monitoredCountries = [
-{ name:"Iran",lat:32.4279,lng:53.6880,labelOffset:[8,-8]},
-{ name:"Israel",lat:31.0461,lng:34.8516,labelOffset:[8,-6]},
-{ name:"Jordan",lat:30.5852,lng:36.2384,labelOffset:[8,-6]},
-{ name:"Iraq",lat:33.2232,lng:43.6793,labelOffset:[8,-6]},
-{ name:"Kuwait",lat:29.3117,lng:47.4818,labelOffset:[8,-6]},
-{ name:"Saudi Arabia",lat:23.8859,lng:45.0792,labelOffset:[8,12]},
 
-/* Gulf countries adjusted so labels don't overlap */
-{ name:"Qatar",lat:25.3548,lng:51.1839,labelOffset:[14,14]},
-{ name:"Bahrain",lat:26.0667,lng:50.5577,labelOffset:[-26,-6]},
-{ name:"UAE",lat:24.4539,lng:54.3773,labelOffset:[12,-12]},
-{ name:"Oman",lat:20.4730,lng:57.9990,labelOffset:[-18,10]}
+{ name:"Iran",lat:32.4279,lng:53.6880,labelOffset:[8,-8],markerOffset:[0,0]},
+{ name:"Israel",lat:31.0461,lng:34.8516,labelOffset:[8,-6],markerOffset:[0,0]},
+{ name:"Jordan",lat:30.5852,lng:36.2384,labelOffset:[8,-6],markerOffset:[0,0]},
+{ name:"Iraq",lat:33.2232,lng:43.6793,labelOffset:[8,-6],markerOffset:[0,0]},
+{ name:"Kuwait",lat:29.3117,lng:47.4818,labelOffset:[8,-6],markerOffset:[0,0]},
+{ name:"Saudi Arabia",lat:23.8859,lng:45.0792,labelOffset:[8,12],markerOffset:[0,0]},
+
+/* Gulf adjustments */
+
+{ name:"Bahrain",lat:26.0667,lng:50.5577,labelOffset:[0,-10],markerOffset:[0,10]},
+{ name:"Qatar",lat:25.3548,lng:51.1839,labelOffset:[0,-10],markerOffset:[0,10]},
+{ name:"UAE",lat:24.4539,lng:54.3773,labelOffset:[0,-10],markerOffset:[0,10]},
+{ name:"Oman",lat:20.4730,lng:57.9990,labelOffset:[0,-10],markerOffset:[0,10]}
+
 ]
 
 export default function Map({ incidents }: MapProps){
@@ -63,7 +66,7 @@ g.selectAll("path")
 .attr("stroke","#64748b")
 .attr("stroke-width",0.4)
 
-/* GREEN COUNTRY MARKERS */
+/* COUNTRY MARKERS */
 
 const nodes = g.selectAll(".countryNode")
 .data(monitoredCountries)
@@ -95,7 +98,12 @@ nodes.append("text")
 nodes.attr("transform",(d:any)=>{
 
 const coords = projection([d.lng,d.lat])
-return coords ? `translate(${coords[0]},${coords[1]})` : ""
+if(!coords) return ""
+
+const x = coords[0] + (d.markerOffset?.[0] || 0)
+const y = coords[1] + (d.markerOffset?.[1] || 0)
+
+return `translate(${x},${y})`
 
 })
 
@@ -150,7 +158,9 @@ return coords ? `translate(${coords[0]},${coords[1]})` : ""
 })
 
 setTimeout(()=>{
+
 svg.selectAll(".incident").remove()
+
 },20000)
 
 },[incidents])
