@@ -54,34 +54,38 @@ return ()=>clearInterval(interval)
 
 
 
-/* CITY DETECTION MAP */
+/* LOCATION DATABASE */
 
-const cityMap:any = {
+const locations:any = {
 
-"haifa":{name:"Israel",lat:31.0461,lng:34.8516},
-"tel aviv":{name:"Israel",lat:31.0461,lng:34.8516},
-"jerusalem":{name:"Israel",lat:31.0461,lng:34.8516},
+haifa:{name:"Israel",lat:32.794,lng:34.989},
+"tel aviv":{name:"Israel",lat:32.085,lng:34.781},
+jerusalem:{name:"Israel",lat:31.768,lng:35.213},
 
-"tehran":{name:"Iran",lat:32.4279,lng:53.6880},
-"isfahan":{name:"Iran",lat:32.4279,lng:53.6880},
-"tabriz":{name:"Iran",lat:32.4279,lng:53.6880},
+israel:{name:"Israel",lat:31.046,lng:34.851},
 
-"riyadh":{name:"Saudi Arabia",lat:23.8859,lng:45.0792},
-"jeddah":{name:"Saudi Arabia",lat:23.8859,lng:45.0792},
-"mecca":{name:"Saudi Arabia",lat:23.8859,lng:45.0792},
+tehran:{name:"Iran",lat:35.689,lng:51.389},
+iran:{name:"Iran",lat:32.427,lng:53.688},
 
-"dubai":{name:"UAE",lat:24.4539,lng:54.3773},
-"abu dhabi":{name:"UAE",lat:24.4539,lng:54.3773},
-"sharjah":{name:"UAE",lat:24.4539,lng:54.3773},
+riyadh:{name:"Saudi Arabia",lat:24.713,lng:46.675},
+jeddah:{name:"Saudi Arabia",lat:21.485,lng:39.192},
+"saudi arabia":{name:"Saudi Arabia",lat:23.885,lng:45.079},
 
-"doha":{name:"Qatar",lat:25.3548,lng:51.1839},
+dubai:{name:"UAE",lat:25.204,lng:55.270},
+"abu dhabi":{name:"UAE",lat:24.453,lng:54.377},
+uae:{name:"UAE",lat:24.453,lng:54.377},
 
-"manama":{name:"Bahrain",lat:26.0667,lng:50.5577},
+doha:{name:"Qatar",lat:25.285,lng:51.531},
+qatar:{name:"Qatar",lat:25.354,lng:51.183},
 
-"muscat":{name:"Oman",lat:20.4730,lng:57.9990},
+manama:{name:"Bahrain",lat:26.223,lng:50.587},
+bahrain:{name:"Bahrain",lat:26.066,lng:50.557},
 
-"baghdad":{name:"Iraq",lat:33.2232,lng:43.6793},
-"basra":{name:"Iraq",lat:33.2232,lng:43.6793}
+muscat:{name:"Oman",lat:23.588,lng:58.382},
+oman:{name:"Oman",lat:20.473,lng:57.999},
+
+baghdad:{name:"Iraq",lat:33.315,lng:44.366},
+iraq:{name:"Iraq",lat:33.223,lng:43.679}
 
 }
 
@@ -109,27 +113,31 @@ const tweetId = tweet.url
 if(tweetId === lastTweetId) return
 
 const cleanText = tweet.text
-.replace(/<!\[CDATA\[/g,"")
-.replace(/\]\]>/g,"")
+.replace(/<!CDATA\[/g,"")
+.replace(/\]>/g,"")
 .replace(/<[^>]*>/g,"")
 .trim()
 
 const text = cleanText.toLowerCase()
 
-let location = {name:"Middle East",lat:31,lng:45}
+let location = null
 
-for(const city in cityMap){
+for(const key in locations){
 
-if(text.includes(city)){
-
-location = cityMap[city]
+if(text.includes(key)){
+location = locations[key]
 break
+}
 
 }
 
+if(!location){
+setLastTweetId(tweetId)
+return
 }
 
 const incident: Incident = {
+
 id:tweetId,
 title:cleanText,
 description:cleanText,
@@ -137,6 +145,7 @@ timestamp:tweet.time,
 location:location,
 severity:"high",
 sourceUrl:tweet.url
+
 }
 
 setAlertIncident(incident)
@@ -145,7 +154,7 @@ setIncidents(prev => [incident,...prev])
 
 setTimeout(()=>{
 setAlertIncident(null)
-},7000)
+},8000)
 
 setLastTweetId(tweetId)
 
@@ -276,91 +285,4 @@ className="flex items-center gap-2 px-3 py-1.5 bg-white/5 hover:bg-white/10 bord
 Sync
 </span>
 
-</button>
-
-</header>
-
-
-
-<main className="flex flex-1 overflow-hidden">
-
-<aside className="w-80 hidden md:block">
-
-<IncidentFeed
-incidents={incidents}
-onSelectIncident={setSelectedIncident}
-selectedIncidentId={selectedIncident?.id}
-/>
-
-</aside>
-
-
-
-<section className="flex-1 flex flex-col relative">
-
-<StatsPanel incidents={incidents}/>
-
-<div className="flex flex-1 gap-4 p-4">
-
-<div className="flex-1">
-
-<Map
-incidents={incidents}
-onSelectIncident={setSelectedIncident}
-/>
-
-</div>
-
-
-
-<div className="w-[360px] hidden lg:block">
-
-<div className="h-full bg-[#0d0d0d] border border-white/10 rounded-xl overflow-hidden">
-
-<div className="px-4 py-2 border-b border-white/10 text-xs uppercase tracking-widest text-white/50">
-Live Signal Feed
-</div>
-
-<div className="h-[calc(100%-32px)] overflow-y-auto p-2">
-
-<div id="twitter-feed-container">
-
-<a
-className="twitter-timeline"
-data-theme="dark"
-data-height="700"
-data-chrome="nofooter noborders transparent"
-href="https://twitter.com/ALERTX360"
->
-
-Tweets by ALERTX360
-
-</a>
-
-</div>
-
-</div>
-
-</div>
-
-</div>
-
-</div>
-
-</section>
-
-</main>
-
-
-
-<footer className="h-8 bg-[#111] border-t border-white/10 flex items-center px-4 text-[10px] text-white/40">
-
-Last Sync: {lastUpdated.toLocaleTimeString()}
-
-</footer>
-
-</div>
-
-)
-
-}
+</
