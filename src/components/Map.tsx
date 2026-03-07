@@ -1,166 +1,378 @@
-import React, { useEffect, useRef, useState } from "react"
-import * as d3 from "d3"
-import { Incident } from "../types"
+import React, { useEffect, useState } from "react"
+import { Incident, MonitoredSource } from "./types"
+import { fetchLatestIncidents } from "./services/gemini"
+import Map from "./components/Map"
+import IncidentFeed from "./components/IncidentFeed"
+import StatsPanel from "./components/StatsPanel"
+import { RefreshCw, ShieldAlert } from "lucide-react"
+import { motion, AnimatePresence } from "motion/react"
 
-interface MapProps {
-  incidents: Incident[]
-}
+export default function App() {
 
-const monitoredCountries = [
-{ name:"Iran",lat:32.4279,lng:53.6880,labelOffset:[8,-8]},
-{ name:"Israel",lat:31.0461,lng:34.8516,labelOffset:[8,-6]},
-{ name:"Jordan",lat:30.5852,lng:36.2384,labelOffset:[8,-6]},
-{ name:"Iraq",lat:33.2232,lng:43.6793,labelOffset:[8,-6]},
-{ name:"Kuwait",lat:29.3117,lng:47.4818,labelOffset:[8,-6]},
-{ name:"Saudi Arabia",lat:23.8859,lng:45.0792,labelOffset:[8,12]},
-{ name:"Qatar",lat:25.3548,lng:51.1839,labelOffset:[8,-6]},
-{ name:"Bahrain",lat:26.0667,lng:50.5577,labelOffset:[10,-6]},
-{ name:"UAE",lat:24.4539,lng:54.3773,labelOffset:[-20,-6]},
-{ name:"Oman",lat:20.4730,lng:57.9990,labelOffset:[-18,-6]}
+const [incidents,setIncidents] = useState<Incident[]>([])
+const [twitterIncidents,setTwitterIncidents] = useState<Incident[]>([])
+const [loading,setLoading] = useState(true)
+const [selectedIncident,setSelectedIncident] = useState<Incident | null>(null)
+const [lastUpdated,setLastUpdated] = useState(new Date())
+const [alertIncident,setAlertIncident] = useState<Incident | null>(null)
+const [lastTweetId,setLastTweetId] = useState<string | null>(null)
+
+const monitoredSources: MonitoredSource[] = [
+{ id:"1", url:"https://x.com/ALERTX360", handle:"@ALERTX360", label:"AlertX360" },
+{ id:"2", url:"https://x.com/MonitorX99800", handle:"@MonitorX99800", label:"MonitorX" }
 ]
 
-export default function Map({ incidents }: MapProps){
+const loadData = async (isInitial=false) => {
 
-const svgRef = useRef<SVGSVGElement>(null)
-const [world,setWorld] = useState<any>(null)
+if(isInitial) setLoading(true)
+
+const data = await fetchLatestIncidents(monitoredSources)
+
+setIncidents(data)
+
+if(selectedIncident){
+const updated = data.find(i => i.id === selectedIncident.id)
+if(updated) setSelectedIncident(updated)
+}
+
+setLoading(false)
+setLastUpdated(new Date())
+
+}
 
 useEffect(()=>{
 
-/* Stable GeoJSON source */
-fetch("https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/world.geojson")
-.then(res=>res.json())
-.then(data=>setWorld(data))
+loadData(true)
+
+const interval = setInterval(()=>loadData(false),60000)
+
+return ()=>clearInterval(interval)
 
 },[])
 
-useEffect(()=>{
 
-if(!world || !svgRef.current) return
 
-const width = svgRef.current.clientWidth
-const height = svgRef.current.clientHeight
+/* LOCATION DATABASE */
 
-const svg = d3.select(svgRef.current)
+const locations:any = {
 
-svg.selectAll("*").remove()
+haifa:{name:"Israel",lat:32.794,lng:34.989},
+"tel aviv":{name:"Israel",lat:32.085,lng:34.781},
+jerusalem:{name:"Israel",lat:31.768,lng:35.213},
+israel:{name:"Israel",lat:31.046,lng:34.851},
 
-const projection = d3.geoMercator()
-.center([45,26])
-.scale(width*1.4)
-.translate([width/2,height/2])
+tehran:{name:"Iran",lat:35.689,lng:51.389},
+iran:{name:"Iran",lat:32.427,lng:53.688},
 
-const path = d3.geoPath().projection(projection)
+riyadh:{name:"Saudi Arabia",lat:24.713,lng:46.675},
+jeddah:{name:"Saudi Arabia",lat:21.485,lng:39.192},
+"saudi arabia":{name:"Saudi Arabia",lat:23.885,lng:45.079},
 
-const g = svg.append("g")
+dubai:{name:"UAE",lat:25.204,lng:55.270},
+"abu dhabi":{name:"UAE",lat:24.453,lng:54.377},
+uae:{name:"UAE",lat:24.453,lng:54.377},
 
-g.selectAll("path")
-.data(world.features)
-.enter()
-.append("path")
-.attr("d",path as any)
-.attr("fill","#0f172a")
-.attr("stroke","#64748b")
-.attr("stroke-width",0.4)
+doha:{name:"Qatar",lat:25.285,lng:51.531},
+qatar:{name:"Qatar",lat:25.354,lng:51.183},
 
-/* GREEN COUNTRY MARKERS */
+manama:{name:"Bahrain",lat:26.223,lng:50.587},
+bahrain:{name:"Bahrain",lat:26.066,lng:50.557},
 
-const nodes = g.selectAll(".countryNode")
-.data(monitoredCountries)
-.enter()
-.append("g")
-.attr("class","countryNode")
+muscat:{name:"Oman",lat:23.588,lng:58.382},
+oman:{name:"Oman",lat:20.473,lng:57.999},
 
-nodes.append("circle")
-.attr("r",4)
-.attr("fill","#22c55e")
+baghdad:{name:"Iraq",lat:33.315,lng:44.366},
+iraq:{name:"Iraq",lat:33.223,lng:43.679}
 
-nodes.append("circle")
-.attr("r",4)
-.attr("stroke","#22c55e")
-.attr("fill","none")
-.attr("stroke-width",1)
-.append("animate")
-.attr("attributeName","r")
-.attr("from","4")
-.attr("to","12")
-.attr("dur","2s")
-.attr("repeatCount","indefinite")
+}
 
-nodes.append("text")
-.text((d:any)=>d.name)
-.attr("font-size","10px")
-.attr("fill","#e2e8f0")
 
-nodes.attr("transform",(d:any)=>{
 
-const coords = projection([d.lng,d.lat])
-return coords ? `translate(${coords[0]},${coords[1]})` : ""
-
-})
-
-nodes.select("text")
-.attr("dx",(d:any)=>d.labelOffset[0])
-.attr("dy",(d:any)=>d.labelOffset[1])
-
-},[world])
+/* TWITTER MONITORING */
 
 useEffect(()=>{
 
-if(!svgRef.current) return
+const checkTwitter = async () => {
 
-const svg = d3.select(svgRef.current)
+try{
 
-const projection = d3.geoMercator()
-.center([45,26])
-.scale(svgRef.current.clientWidth*1.4)
-.translate([svgRef.current.clientWidth/2,svgRef.current.clientHeight/2])
+const res = await fetch("/api/twitter")
+const data = await res.json()
 
-const alerts = svg.selectAll(".incident")
-.data(incidents,(d:any)=>d.id)
+if(!data.success) return
 
-alerts.exit().remove()
+const tweet = data.tweets?.[0]
 
-const enter = alerts.enter()
-.append("g")
-.attr("class","incident")
+if(!tweet) return
 
-enter.append("circle")
-.attr("r",7)
-.attr("fill","#ef4444")
+const tweetId = tweet.url
 
-enter.append("circle")
-.attr("r",7)
-.attr("stroke","#ef4444")
-.attr("fill","none")
-.attr("stroke-width",2)
-.append("animate")
-.attr("attributeName","r")
-.attr("from","7")
-.attr("to","24")
-.attr("dur","1.5s")
-.attr("repeatCount","indefinite")
+/* Prevent duplicate processing */
 
-svg.selectAll(".incident")
-.attr("transform",(d:any)=>{
+if(tweetId === lastTweetId) return
 
-const coords = projection([d.location.lng,d.location.lat])
-return coords ? `translate(${coords[0]},${coords[1]})` : ""
+const cleanText = tweet.text
+.replace(/<!\[CDATA\[/g,"")
+.replace(/\]\]>/g,"")
+.replace(/<[^>]*>/g,"")
+.trim()
 
-})
+const text = cleanText.toLowerCase()
+
+let location:any = null
+
+for(const key in locations){
+
+const pattern = new RegExp(`\\b${key}\\b`)
+
+if(pattern.test(text)){
+location = locations[key]
+break
+}
+
+}
+
+/* Ignore tweets without location */
+
+if(!location){
+setLastTweetId(tweetId)
+return
+}
+
+const incident: Incident = {
+
+id:tweetId,
+title:cleanText,
+description:cleanText,
+timestamp:tweet.time,
+location:location,
+severity:"high",
+sourceUrl:tweet.url
+
+}
+
+/* Add only to twitter incidents */
+
+setTwitterIncidents(prev => [incident,...prev])
+
+setAlertIncident(incident)
 
 setTimeout(()=>{
 
-svg.selectAll(".incident").remove()
+setAlertIncident(null)
+
+setTwitterIncidents(prev => prev.filter(i => i.id !== tweetId))
 
 },20000)
 
-},[incidents])
+setLastTweetId(tweetId)
 
-return(
+}catch(err){
 
-<div className="relative w-full h-full bg-[#020617] rounded-xl overflow-hidden border border-white/5">
+console.error("Twitter monitor error",err)
 
-<svg ref={svgRef} className="w-full h-full"/>
+}
+
+}
+
+checkTwitter()
+
+const interval = setInterval(checkTwitter,15000)
+
+return ()=>clearInterval(interval)
+
+},[lastTweetId])
+
+
+
+/* TWITTER FEED AUTO REFRESH */
+
+useEffect(()=>{
+
+const reloadTwitterFeed = () => {
+
+const container = document.getElementById("twitter-feed-container")
+
+if(!container) return
+
+const html = container.innerHTML
+
+container.innerHTML = ""
+
+setTimeout(()=>{
+
+container.innerHTML = html
+
+if((window as any).twttr){
+(window as any).twttr.widgets.load()
+}
+
+},100)
+
+}
+
+const interval = setInterval(reloadTwitterFeed,60000)
+
+return ()=>clearInterval(interval)
+
+},[])
+
+
+
+return (
+
+<div className="flex flex-col h-screen bg-[#050505] text-white font-sans">
+
+<AnimatePresence>
+
+{alertIncident && (
+
+<motion.div
+initial={{ y:-120, opacity:0 }}
+animate={{ y:20, opacity:1 }}
+exit={{ y:-120, opacity:0 }}
+className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-red-600 px-6 py-4 rounded-xl flex items-center gap-4 shadow-2xl max-w-xl"
+>
+
+<div className="flex flex-col">
+
+<span className="text-xs uppercase tracking-widest font-bold">
+SIGNAL DETECTED
+</span>
+
+<span className="text-sm font-semibold">
+{alertIncident.title}
+</span>
+
+<span className="text-[11px] text-white/80">
+Location: {alertIncident.location.name}
+</span>
+
+</div>
+
+</motion.div>
+
+)}
+
+</AnimatePresence>
+
+
+
+<header className="h-14 border-b border-white/10 flex items-center justify-between px-6 bg-[#0a0a0a]">
+
+<div className="flex items-center gap-3">
+
+<div className="w-8 h-8 bg-red-600 rounded flex items-center justify-center">
+<ShieldAlert size={18}/>
+</div>
+
+<div>
+
+<h1 className="text-sm font-bold uppercase">
+Global Conflict Monitor
+</h1>
+
+<span className="text-[9px] font-mono text-white/40 uppercase">
+Strategic Intelligence Network
+</span>
+
+</div>
+
+</div>
+
+<button
+onClick={()=>loadData(false)}
+disabled={loading}
+className="flex items-center gap-2 px-3 py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded"
+>
+
+<RefreshCw size={14} className={loading ? "animate-spin" : ""}/>
+
+<span className="text-[10px] uppercase">
+Sync
+</span>
+
+</button>
+
+</header>
+
+
+
+<main className="flex flex-1 overflow-hidden">
+
+<aside className="w-80 hidden md:block">
+
+<IncidentFeed
+incidents={incidents}
+onSelectIncident={setSelectedIncident}
+selectedIncidentId={selectedIncident?.id}
+/>
+
+</aside>
+
+
+
+<section className="flex-1 flex flex-col relative">
+
+<StatsPanel incidents={incidents}/>
+
+<div className="flex flex-1 gap-4 p-4">
+
+<div className="flex-1">
+
+<Map
+incidents={twitterIncidents}
+/>
+
+</div>
+
+
+
+<div className="w-[360px] hidden lg:block">
+
+<div className="h-full bg-[#0d0d0d] border border-white/10 rounded-xl overflow-hidden">
+
+<div className="px-4 py-2 border-b border-white/10 text-xs uppercase tracking-widest text-white/50">
+Live Signal Feed
+</div>
+
+<div className="h-[calc(100%-32px)] overflow-y-auto p-2">
+
+<div id="twitter-feed-container">
+
+<a
+className="twitter-timeline"
+data-theme="dark"
+data-height="700"
+data-chrome="nofooter noborders transparent"
+href="https://twitter.com/ALERTX360"
+>
+
+Tweets by ALERTX360
+
+</a>
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+</section>
+
+</main>
+
+
+
+<footer className="h-8 bg-[#111] border-t border-white/10 flex items-center px-4 text-[10px] text-white/40">
+
+Last Sync: {lastUpdated.toLocaleTimeString()}
+
+</footer>
 
 </div>
 
