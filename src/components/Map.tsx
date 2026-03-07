@@ -21,6 +21,8 @@ const monitoredCountries = [
   { name: "Iraq", lat: 33.2, lng: 44.4 }
 ]
 
+const monitoredNames = monitoredCountries.map(c => c.name)
+
 const Map: React.FC<MapProps> = ({ incidents, onSelectIncident }) => {
 
   const svgRef = useRef<SVGSVGElement>(null)
@@ -45,7 +47,6 @@ const Map: React.FC<MapProps> = ({ incidents, onSelectIncident }) => {
     const width = svgRef.current.clientWidth
     const height = svgRef.current.clientHeight
 
-    /* Middle East focused projection */
     const projection = d3.geoMercator()
       .center([45, 27])
       .scale(width * 1.4)
@@ -68,13 +69,17 @@ const Map: React.FC<MapProps> = ({ incidents, onSelectIncident }) => {
       .enter()
       .append("path")
       .attr("d", path as any)
-      .attr("fill", "#111")
+      .attr("fill", (d: any) => {
+        const name = d.properties.name
+        if (monitoredNames.includes(name)) {
+          return "#1c2c3c"
+        }
+        return "#111"
+      })
       .attr("stroke", "#333")
       .attr("stroke-width", 0.6)
 
   }, [worldData])
-
-  /* COUNTRY NODES */
 
   useEffect(() => {
 
@@ -121,8 +126,6 @@ const Map: React.FC<MapProps> = ({ incidents, onSelectIncident }) => {
 
   }, [worldData])
 
-  /* INCIDENT MARKERS */
-
   useEffect(() => {
 
     if (!mapLayer.current || !projectionRef.current) return
@@ -131,7 +134,7 @@ const Map: React.FC<MapProps> = ({ incidents, onSelectIncident }) => {
     const projection = projectionRef.current
 
     const points = g.selectAll(".incident")
-      .data(incidents, (d: any) => d.id)
+      .data(incidents, (d: any) => d.url)
 
     points.exit().remove()
 
@@ -140,6 +143,7 @@ const Map: React.FC<MapProps> = ({ incidents, onSelectIncident }) => {
       .attr("class", "incident")
       .style("cursor", "pointer")
       .on("click", (event, d) => {
+        event.stopPropagation()
         onSelectIncident(d)
       })
 
