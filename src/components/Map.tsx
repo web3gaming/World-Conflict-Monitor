@@ -111,8 +111,8 @@ if(!svgRef.current) return
 const svg = d3.select(svgRef.current)
 
 const projection = d3.geoMercator()
-.center([45,26])
-.scale(svgRef.current.clientWidth*1.4)
+.center([47,24])
+.scale(svgRef.current.clientWidth*1.55)
 .translate([svgRef.current.clientWidth/2,svgRef.current.clientHeight/2])
 
 const alerts = svg.selectAll(".incident")
