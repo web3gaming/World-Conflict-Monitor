@@ -26,16 +26,10 @@ const [world,setWorld] = useState<any>(null)
 
 useEffect(()=>{
 
-/* SAFER GEOJSON SOURCE */
-
-fetch("https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json")
+/* Stable GeoJSON source */
+fetch("https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/world.geojson")
 .then(res=>res.json())
-.then(data=>{
-
-const countries = (window as any).topojson.feature(data,data.objects.countries)
-setWorld(countries)
-
-})
+.then(data=>setWorld(data))
 
 },[])
 
@@ -67,6 +61,8 @@ g.selectAll("path")
 .attr("fill","#0f172a")
 .attr("stroke","#64748b")
 .attr("stroke-width",0.4)
+
+/* GREEN COUNTRY MARKERS */
 
 const nodes = g.selectAll(".countryNode")
 .data(monitoredCountries)
