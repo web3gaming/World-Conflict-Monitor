@@ -29,6 +29,9 @@ export default function Map({ incidents }: MapProps){
 const svgRef = useRef<SVGSVGElement>(null)
 const [world,setWorld] = useState<any>(null)
 
+/* Memory of shown tweet markers */
+const shownIncidents = useRef<Set<string>>(new Set())
+
 useEffect(()=>{
 
 fetch("https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/world.geojson")
@@ -113,6 +116,8 @@ nodes.select("text")
 
 },[world])
 
+/* ALERT MARKERS */
+
 useEffect(()=>{
 
 if(!svgRef.current) return
@@ -124,10 +129,16 @@ const projection = d3.geoMercator()
 .scale(svgRef.current.clientWidth*1.45)
 .translate([svgRef.current.clientWidth/2,svgRef.current.clientHeight/2])
 
-const alerts = svg.selectAll(".incident")
-.data(incidents,(d:any)=>d.id)
+/* Only allow NEW tweet markers */
 
-alerts.exit().remove()
+const newIncidents = incidents.filter((d:any)=>{
+if(shownIncidents.current.has(d.id)) return false
+shownIncidents.current.add(d.id)
+return true
+})
+
+const alerts = svg.selectAll(".incident")
+.data(newIncidents,(d:any)=>d.id)
 
 const enter = alerts.enter()
 .append("g")
@@ -149,18 +160,17 @@ enter.append("circle")
 .attr("dur","1.5s")
 .attr("repeatCount","indefinite")
 
-svg.selectAll(".incident")
-.attr("transform",(d:any)=>{
+enter.attr("transform",(d:any)=>{
 
 const coords = projection([d.location.lng,d.location.lat])
 return coords ? `translate(${coords[0]},${coords[1]})` : ""
 
 })
 
+/* Remove marker after 20 seconds */
+
 setTimeout(()=>{
-
 svg.selectAll(".incident").remove()
-
 },20000)
 
 },[incidents])
