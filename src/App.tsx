@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react"
+import React, { useEffect, useState, useRef } from "react"
 import { Incident, MonitoredSource } from "./types"
 import { fetchLatestIncidents } from "./services/gemini"
 import Map from "./components/Map"
@@ -15,7 +15,9 @@ const [loading,setLoading] = useState(true)
 const [selectedIncident,setSelectedIncident] = useState<Incident | null>(null)
 const [lastUpdated,setLastUpdated] = useState(new Date())
 const [alertIncident,setAlertIncident] = useState<Incident | null>(null)
-const [lastTweetId,setLastTweetId] = useState<string | null>(null)
+
+/* store processed tweets */
+const processedTweets = useRef<Set<string>>(new Set())
 
 const monitoredSources: MonitoredSource[] = [
 { id:"1", url:"https://x.com/ALERTX360", handle:"@ALERTX360", label:"AlertX360" },
@@ -81,6 +83,15 @@ bahrain:{name:"Bahrain",lat:26.066,lng:50.557},
 muscat:{name:"Oman",lat:23.588,lng:58.382},
 oman:{name:"Oman",lat:20.473,lng:57.999},
 
+kuwait:{name:"Kuwait",lat:29.311,lng:47.481},
+
+tulkarm:{name:"West Bank",lat:32.310,lng:35.028},
+"west bank":{name:"West Bank",lat:31.946,lng:35.302},
+ramallah:{name:"West Bank",lat:31.903,lng:35.204},
+jenin:{name:"West Bank",lat:32.459,lng:35.300},
+nablus:{name:"West Bank",lat:32.222,lng:35.262},
+gaza:{name:"Gaza",lat:31.501,lng:34.466},
+
 baghdad:{name:"Iraq",lat:33.315,lng:44.366},
 iraq:{name:"Iraq",lat:33.223,lng:43.679}
 
@@ -107,7 +118,11 @@ if(!tweet) return
 
 const tweetId = tweet.url
 
-if(tweetId === lastTweetId) return
+/* skip if already processed */
+
+if(processedTweets.current.has(tweetId)) return
+
+processedTweets.current.add(tweetId)
 
 const cleanText = tweet.text
 .replace(/<!\[CDATA\[/g,"")
@@ -119,8 +134,6 @@ const text = cleanText.toLowerCase()
 
 let location:any = null
 
-/* robust location detection */
-
 for(const key in locations){
 
 if(text.includes(key)){
@@ -130,10 +143,7 @@ break
 
 }
 
-if(!location){
-setLastTweetId(tweetId)
-return
-}
+if(!location) return
 
 const incident: Incident = {
 
@@ -159,8 +169,6 @@ setTwitterIncidents(prev => prev.filter(i => i.id !== tweetId))
 
 },20000)
 
-setLastTweetId(tweetId)
-
 }catch(err){
 
 console.error("Twitter monitor error",err)
@@ -175,7 +183,7 @@ const interval = setInterval(checkTwitter,15000)
 
 return ()=>clearInterval(interval)
 
-},[lastTweetId])
+},[])
 
 
 
@@ -314,9 +322,7 @@ selectedIncidentId={selectedIncident?.id}
 
 <div className="flex-1">
 
-<Map
-incidents={twitterIncidents}
-/>
+<Map incidents={twitterIncidents}/>
 
 </div>
 
