@@ -88,7 +88,7 @@ iraq:{name:"Iraq",lat:33.223,lng:43.679}
 
 
 
-/* TWITTER MONITORING */
+/* TWITTER MONITOR */
 
 useEffect(()=>{
 
@@ -107,8 +107,6 @@ if(!tweet) return
 
 const tweetId = tweet.url
 
-/* Prevent duplicate processing */
-
 if(tweetId === lastTweetId) return
 
 const cleanText = tweet.text
@@ -121,18 +119,16 @@ const text = cleanText.toLowerCase()
 
 let location:any = null
 
+/* robust location detection */
+
 for(const key in locations){
 
-const pattern = new RegExp(`\\b${key}\\b`)
-
-if(pattern.test(text)){
+if(text.includes(key)){
 location = locations[key]
 break
 }
 
 }
-
-/* Ignore tweets without location */
 
 if(!location){
 setLastTweetId(tweetId)
@@ -150,8 +146,6 @@ severity:"high",
 sourceUrl:tweet.url
 
 }
-
-/* Add only to twitter incidents */
 
 setTwitterIncidents(prev => [incident,...prev])
 
