@@ -15,8 +15,6 @@ const monitoredCountries = [
 { name:"Kuwait",lat:29.3117,lng:47.4818,labelOffset:[8,-6],markerOffset:[0,0]},
 { name:"Saudi Arabia",lat:23.8859,lng:45.0792,labelOffset:[8,12],markerOffset:[0,0]},
 
-/* Gulf adjustments */
-
 { name:"Bahrain",lat:27.00,lng:49.90,labelOffset:[0,-10],markerOffset:[0,10]},
 { name:"Qatar",lat:25.3548,lng:51.1839,labelOffset:[0,-10],markerOffset:[0,10]},
 { name:"UAE",lat:24.4539,lng:54.3773,labelOffset:[0,-10],markerOffset:[0,10]},
@@ -29,9 +27,6 @@ export default function Map({ incidents }: MapProps){
 const svgRef = useRef<SVGSVGElement>(null)
 const [world,setWorld] = useState<any>(null)
 
-/* Memory of shown tweet markers */
-const shownIncidents = useRef<Set<string>>(new Set())
-
 useEffect(()=>{
 
 fetch("https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/world.geojson")
@@ -39,6 +34,8 @@ fetch("https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/wor
 .then(data=>setWorld(data))
 
 },[])
+
+/* DRAW MAP */
 
 useEffect(()=>{
 
@@ -116,7 +113,7 @@ nodes.select("text")
 
 },[world])
 
-/* ALERT MARKERS */
+/* INCIDENT ALERT MARKERS */
 
 useEffect(()=>{
 
@@ -129,16 +126,10 @@ const projection = d3.geoMercator()
 .scale(svgRef.current.clientWidth*1.45)
 .translate([svgRef.current.clientWidth/2,svgRef.current.clientHeight/2])
 
-/* Only allow NEW tweet markers */
-
-const newIncidents = incidents.filter((d:any)=>{
-if(shownIncidents.current.has(d.id)) return false
-shownIncidents.current.add(d.id)
-return true
-})
-
 const alerts = svg.selectAll(".incident")
-.data(newIncidents,(d:any)=>d.id)
+.data(incidents,(d:any)=>d.id)
+
+alerts.exit().remove()
 
 const enter = alerts.enter()
 .append("g")
@@ -160,14 +151,13 @@ enter.append("circle")
 .attr("dur","1.5s")
 .attr("repeatCount","indefinite")
 
-enter.attr("transform",(d:any)=>{
+svg.selectAll(".incident")
+.attr("transform",(d:any)=>{
 
 const coords = projection([d.location.lng,d.location.lat])
 return coords ? `translate(${coords[0]},${coords[1]})` : ""
 
 })
-
-/* Remove marker after 20 seconds */
 
 setTimeout(()=>{
 svg.selectAll(".incident").remove()
