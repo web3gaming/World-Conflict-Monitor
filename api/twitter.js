@@ -52,7 +52,10 @@ export default async function handler(req, res) {
               .trim()
 
             const tweetUrl = linkMatch[1]
-            const time = dateMatch ? dateMatch[1] : ""
+
+            const time = dateMatch
+              ? new Date(dateMatch[1]).getTime()
+              : Date.now()
 
             tweets.push({
               text,
@@ -68,9 +71,9 @@ export default async function handler(req, res) {
 
       }
 
-      if (tweets.length > 0) break
-
     }
+
+    /* remove duplicates */
 
     const seen = new Set()
     const uniqueTweets = []
@@ -82,9 +85,9 @@ export default async function handler(req, res) {
       }
     }
 
-    uniqueTweets.sort((a, b) => {
-      return new Date(b.time) - new Date(a.time)
-    })
+    /* sort newest first */
+
+    uniqueTweets.sort((a, b) => b.time - a.time)
 
     const latestTweets = uniqueTweets.slice(0, 20)
 
