@@ -25,6 +25,9 @@ const monitoredCountries = [
 export default function Map({ incidents }: MapProps){
 
 const svgRef = useRef<SVGSVGElement>(null)
+const alertLayerRef = useRef<any>(null)
+const projectionRef = useRef<any>(null)
+
 const [world,setWorld] = useState<any>(null)
 
 useEffect(()=>{
@@ -34,8 +37,6 @@ fetch("https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/wor
 .then(data=>setWorld(data))
 
 },[])
-
-/* DRAW MAP */
 
 useEffect(()=>{
 
@@ -53,11 +54,13 @@ const projection = d3.geoMercator()
 .scale(width*1.45)
 .translate([width/2,height/2])
 
+projectionRef.current = projection
+
 const path = d3.geoPath().projection(projection)
 
-const g = svg.append("g")
+const mapLayer = svg.append("g")
 
-g.selectAll("path")
+mapLayer.selectAll("path")
 .data(world.features)
 .enter()
 .append("path")
@@ -68,7 +71,7 @@ g.selectAll("path")
 
 /* COUNTRY MARKERS */
 
-const nodes = g.selectAll(".countryNode")
+const nodes = mapLayer.selectAll(".countryNode")
 .data(monitoredCountries)
 .enter()
 .append("g")
@@ -111,25 +114,24 @@ nodes.select("text")
 .attr("dx",(d:any)=>d.labelOffset[0])
 .attr("dy",(d:any)=>d.labelOffset[1])
 
+/* ALERT LAYER */
+
+alertLayerRef.current = svg.append("g")
+
 },[world])
 
-/* INCIDENT ALERT MARKERS */
+/* INCIDENT MARKERS */
 
 useEffect(()=>{
 
-if(!svgRef.current) return
+if(!alertLayerRef.current || !projectionRef.current) return
 
-const svg = d3.select(svgRef.current)
+const projection = projectionRef.current
+const alertLayer = alertLayerRef.current
 
-const projection = d3.geoMercator()
-.center([46,25])
-.scale(svgRef.current.clientWidth*1.45)
-.translate([svgRef.current.clientWidth/2,svgRef.current.clientHeight/2])
-
-const alerts = svg.selectAll(".incident")
+const alerts = alertLayer
+.selectAll(".incident")
 .data(incidents,(d:any)=>d.id)
-
-alerts.exit().remove()
 
 const enter = alerts.enter()
 .append("g")
@@ -151,8 +153,7 @@ enter.append("circle")
 .attr("dur","1.5s")
 .attr("repeatCount","indefinite")
 
-svg.selectAll(".incident")
-.attr("transform",(d:any)=>{
+enter.attr("transform",(d:any)=>{
 
 const coords = projection([d.location.lng,d.location.lat])
 return coords ? `translate(${coords[0]},${coords[1]})` : ""
@@ -160,7 +161,7 @@ return coords ? `translate(${coords[0]},${coords[1]})` : ""
 })
 
 setTimeout(()=>{
-svg.selectAll(".incident").remove()
+alertLayer.selectAll(".incident").remove()
 },20000)
 
 },[incidents])
