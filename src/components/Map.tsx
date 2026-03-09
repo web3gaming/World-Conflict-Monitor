@@ -25,9 +25,8 @@ const monitoredCountries = [
 export default function Map({ incidents }: MapProps){
 
 const svgRef = useRef<SVGSVGElement>(null)
-const alertLayerRef = useRef<any>(null)
+const gRef = useRef<any>(null)
 const projectionRef = useRef<any>(null)
-
 const [world,setWorld] = useState<any>(null)
 
 useEffect(()=>{
@@ -58,9 +57,11 @@ projectionRef.current = projection
 
 const path = d3.geoPath().projection(projection)
 
-const mapLayer = svg.append("g")
+const g = svg.append("g")
 
-mapLayer.selectAll("path")
+gRef.current = g
+
+g.selectAll("path")
 .data(world.features)
 .enter()
 .append("path")
@@ -71,7 +72,7 @@ mapLayer.selectAll("path")
 
 /* COUNTRY MARKERS */
 
-const nodes = mapLayer.selectAll(".countryNode")
+const nodes = g.selectAll(".countryNode")
 .data(monitoredCountries)
 .enter()
 .append("g")
@@ -114,24 +115,21 @@ nodes.select("text")
 .attr("dx",(d:any)=>d.labelOffset[0])
 .attr("dy",(d:any)=>d.labelOffset[1])
 
-/* ALERT LAYER */
-
-alertLayerRef.current = svg.append("g")
-
 },[world])
 
-/* INCIDENT MARKERS */
+/* INCIDENT RADAR MARKERS */
 
 useEffect(()=>{
 
-if(!alertLayerRef.current || !projectionRef.current) return
+if(!gRef.current || !projectionRef.current) return
 
+const g = gRef.current
 const projection = projectionRef.current
-const alertLayer = alertLayerRef.current
 
-const alerts = alertLayer
-.selectAll(".incident")
+const alerts = g.selectAll(".incident")
 .data(incidents,(d:any)=>d.id)
+
+alerts.exit().remove()
 
 const enter = alerts.enter()
 .append("g")
@@ -149,11 +147,12 @@ enter.append("circle")
 .append("animate")
 .attr("attributeName","r")
 .attr("from","7")
-.attr("to","24")
-.attr("dur","1.5s")
+.attr("to","28")
+.attr("dur","1.4s")
 .attr("repeatCount","indefinite")
 
-enter.attr("transform",(d:any)=>{
+g.selectAll(".incident")
+.attr("transform",(d:any)=>{
 
 const coords = projection([d.location.lng,d.location.lat])
 return coords ? `translate(${coords[0]},${coords[1]})` : ""
@@ -161,7 +160,7 @@ return coords ? `translate(${coords[0]},${coords[1]})` : ""
 })
 
 setTimeout(()=>{
-alertLayer.selectAll(".incident").remove()
+g.selectAll(".incident").remove()
 },20000)
 
 },[incidents])
