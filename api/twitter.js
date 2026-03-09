@@ -5,8 +5,7 @@ export default async function handler(req, res) {
       "https://nitter.net",
       "https://nitter.privacydev.net",
       "https://nitter.poast.org",
-      "https://nitter.unixfox.eu",
-      "https://nitter.moomoo.me"
+      "https://nitter.unixfox.eu"
     ]
 
     const accounts = [
@@ -24,83 +23,55 @@ export default async function handler(req, res) {
 
           const url = `${instance}/${account}/rss`
 
-          const response = await fetch(url, {
-            headers: {
-              "User-Agent":
-                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120 Safari/537.36",
-              "Accept": "application/rss+xml"
+          const response = await fetch(url,{
+            headers:{
+              "User-Agent":"Mozilla/5.0"
             }
           })
 
-          if (!response.ok) continue
+          if(!response.ok) continue
 
           const xml = await response.text()
 
           const items = xml.split("<item>").slice(1)
 
-          for (const item of items) {
+          for(const item of items){
 
-            const titleMatch = item.match(/<title>(.*?)<\/title>/)
-            const linkMatch = item.match(/<link>(.*?)<\/link>/)
-            const dateMatch = item.match(/<pubDate>(.*?)<\/pubDate>/)
+            const title = item.match(/<title>(.*?)<\/title>/)
+            const link = item.match(/<link>(.*?)<\/link>/)
+            const date = item.match(/<pubDate>(.*?)<\/pubDate>/)
 
-            if (!titleMatch || !linkMatch) continue
-
-            const text = titleMatch[1]
-              .replace(/<!\[CDATA\[|\]\]>/g, "")
-              .replace(/<[^>]*>/g, "")
-              .trim()
-
-            const tweetUrl = linkMatch[1]
-
-            const time = dateMatch
-              ? new Date(dateMatch[1]).getTime()
-              : Date.now()
+            if(!title || !link) continue
 
             tweets.push({
-              text,
-              url: tweetUrl,
-              time
+              text: title[1]
+                .replace(/<!\[CDATA\[|\]\]>/g,"")
+                .replace(/<[^>]*>/g,"")
+                .trim(),
+              url: link[1],
+              time: new Date(date ? date[1] : Date.now()).getTime()
             })
 
           }
 
-        } catch (err) {
-          continue
-        }
+        } catch(e) {}
 
       }
 
     }
 
-    /* remove duplicates */
-
-    const seen = new Set()
-    const uniqueTweets = []
-
-    for (const t of tweets) {
-      if (!seen.has(t.url)) {
-        seen.add(t.url)
-        uniqueTweets.push(t)
-      }
-    }
-
-    /* sort newest first */
-
-    uniqueTweets.sort((a, b) => b.time - a.time)
-
-    const latestTweets = uniqueTweets.slice(0, 20)
+    tweets.sort((a,b)=>b.time-a.time)
 
     res.status(200).json({
-      success: true,
-      tweets: latestTweets
+      success:true,
+      tweets:tweets.slice(0,10)
     })
 
-  } catch (error) {
+  } catch(error){
 
     res.status(500).json({
-      success: false,
-      error: error.message
+      success:false,
+      error:error.message
     })
 
   }
